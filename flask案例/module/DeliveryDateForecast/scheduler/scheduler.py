@@ -5,7 +5,8 @@ from .DB_mysql import Mysql
 from .FileProcess import read_production, draw_graph
 from datetime import datetime
 
-orderorder = ['need_date','number','order_date','type']
+orderorder = ['id','need_date','number','order_date','type']
+datenumber = ['date','number']
 
 ll = list[list]
 
@@ -14,7 +15,7 @@ buffer10G: int = 0
 pq: list = []
 finish_queue: list = []
 
-db = Mysql("localhost","pdcuser","pdclab1234","orderlist")
+db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
 
 
 fake_date = "2022-12-24"
@@ -37,42 +38,46 @@ def get_finish_queue() -> list:
 
 # 重新開啟網頁時使用(資料庫讀出訂單、buffer值)
 ## 回傳: 訂單
-def show_pq(yesterday_date: str = '2022-12-24') -> ll:
+def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     global pq, buffer1G, buffer10G, finish_queue
     for element in db.get_orderlist():
         l = []
-        l.append(datetime.strftime(element[0],'%Y-%m-%d'))
-        l.append(int(element[1]))
-        l.append(datetime.strftime(element[2],'%Y-%m-%d'))
-        l.append(element[3])
-        pq.append(l)
+        l.append(int(element[0]))
+        l.append(datetime.strftime(element[1],'%Y-%m-%d'))
+        l.append(int(element[2]))
+        l.append(datetime.strftime(element[3],'%Y-%m-%d'))
+        l.append(element[4])
+        if l not in pq:
+            pq.append(l)
     for element in db.get_finishedorder():
         l = []
-        l.append(datetime.strftime(element[0],'%Y-%m-%d'))
-        l.append(int(element[1]))
-        l.append(datetime.strftime(element[2],'%Y-%m-%d'))
-        l.append(element[3])
-        finish_queue.append(l)
+        l.append(int(element[0]))
+        l.append(datetime.strftime(element[1],'%Y-%m-%d'))
+        l.append(int(element[2]))
+        l.append(datetime.strftime(element[3],'%Y-%m-%d'))
+        l.append(element[4])
+        if l not in finish_queue:
+            finish_queue.append(l)
     for element in db.get_buffer(fake_date):
         buffer1G = element[0]
         buffer10G = element[1]
     l = []
     for i in range(len(pq)):
-        l.append(dict(zip(orderorder,pq[i])))
+        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
     l_l = []
     for i in range(len(finish_queue)):
-        l_l.append(dict(zip(orderorder,finish_queue[i])))
+        l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
     return {'pq':l,'finish_queue':l_l}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
 def insert_order(param: dict) -> dict:
-    db.insert_orderlist(param=param)
-    pq.append(list(param.values()))
-    pq.sort(key=lambda p:p[0])
+    return_id = db.insert_orderlist(param=param)
+    pq.append([return_id]+list(param.values()))
+    pq.sort(key=lambda p:p[1])
     l = []
     for i in range(len(pq)):
-        l.append(dict(zip(orderorder,pq[i])))
+        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
     return {"pq":l}
 
 # 刪除訂單 (訂單從資料庫、pq刪除)
@@ -82,7 +87,7 @@ def delete_order(param: dict) -> ll:
     pq.remove(list(param.values()))
     l = []
     for i in range(len(pq)):
-        l.append(dict(zip(orderorder,pq[i])))
+        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
     return {"pq":l}
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
@@ -120,6 +125,23 @@ def finish_order() -> list:
     db.delete_orderlist(param=pq)
     finish = pq.pop(0)
     return finish
+
+# 取得每日機台產量
+## 回傳: 
+
+def get_daily_product_sum() -> tuple:
+    sum_1G, sum_10G = [list(x) for x in db.get_daily_production_sum()]
+    for idx in range(len(sum_1G)):
+        sum_1G[idx] = [datetime.strftime(sum_1G[idx][0],'%Y-%m-%d'),int(sum_1G[idx][1])]
+        sum_10G[idx] = [datetime.strftime(sum_10G[idx][0],'%Y-%m-%d'),int(sum_10G[idx][1])]
+    l = []
+    for i in range(len(sum_1G)):
+        l.append(dict(zip(datenumber,sum_1G[i])))
+    l_l = []
+    for i in range(len(sum_10G)):
+        l_l.append(dict(zip(datenumber,sum_10G[i])))
+    return {'1G-POE':l}, {'10G':l_l}
+
 
 # 繪製1G機台每日產量圖
 ## 圖片存成jpg

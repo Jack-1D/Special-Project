@@ -14,3 +14,11 @@
             * FileProcess.py: csv 檔案處理
             * scheduler.py: 排程處理
         * OutputPrediction: 產量預測模組
+
+# 套件安裝
+## MysqlDB 安裝
+```
+$ pip3 install mysqlclient
+```
+### 參考資料
+[Python3 + MySql: Error loading MySQLdb module: No module named 'MySQLdb'](https://stackoverflow.com/questions/26560973/python3-mysql-error-loading-mysqldb-module-no-module-named-mysqldb)

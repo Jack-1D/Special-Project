@@ -10,7 +10,7 @@ app.config["DEBUG"] = True
 def show():
     return jsonify(s.show_pq())
 
-@app.route('/insertorder', methods=['GET','POST'])
+@app.route('/insertorder', methods=['POST'])
 def insert():
     if request.method == 'POST':
         if request.is_json:
@@ -18,7 +18,7 @@ def insert():
             return jsonify(s.insert_order(data))
     return "Fail"
 
-@app.route('/deleteorder', methods=['GET','POST'])
+@app.route('/deleteorder', methods=['POST'])
 def delete():
     if request.method == 'POST':
         if request.is_json:
@@ -26,7 +26,12 @@ def delete():
             return jsonify(s.delete_order(data))
     return "Fail"
 
-
+@app.route('/sum', methods=['POST'])
+def summ():
+    if request.method == 'POST':
+        sum_1G, sum_10G = s.get_daily_product_sum()
+        sum_1G.update(sum_10G)
+        return jsonify(sum_1G)
 
 
 @app.route('/login', methods=['POST'])
@@ -44,7 +49,8 @@ def login():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8089)
+    app.run(host='0.0.0.0', port=8888)
+    
 
     # test code
 
