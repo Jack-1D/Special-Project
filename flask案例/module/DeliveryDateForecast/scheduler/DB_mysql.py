@@ -36,9 +36,13 @@ class Mysql(object):
         self.conn.close()
         self.cur.close()
     # class 中的方法
-    # 取得訂單queue
-    def get_orderlist(self) -> tuple:
-        self.execute_line("SELECT * FROM orderlist ORDER BY needdate")
+    # 取得1G-POE訂單queue
+    def get_1G_orderlist(self) -> tuple:
+        self.execute_line("SELECT * FROM orderlist WHERE type='1G-POE' ORDER BY needdate")
+        return self.cur.fetchall()
+    # 取得10G訂單queue
+    def get_10G_orderlist(self) -> tuple:
+        self.execute_line("SELECT * FROM orderlist WHERE type='10G' ORDER BY needdate")
         return self.cur.fetchall()
     # 取得昨天的buffer
     def get_buffer(self, yesterday_date: str) -> tuple:
@@ -46,8 +50,10 @@ class Mysql(object):
         return self.cur.fetchall()
     # 插入訂單
     def insert_orderlist(self, param: dict) -> int:
-        self.execute_line(f"INSERT INTO orderlist(needdate,number,orderdate,type) VALUES('{param['need_date']}',\
-        {param['number']},'{param['order_date']}','{param['type']}')")
+        self.execute_line(f"INSERT INTO orderlist(needdate,number,orderdate,type) SELECT * FROM ( SELECT \
+        '{param['need_date']}',{param['number']},'{param['order_date']}','{param['type']}' ) AS tmp WHERE NOT \
+        EXISTS (SELECT 1 FROM orderlist WHERE needdate='{param['need_date']}' AND number={param['number']} AND \
+        orderdate='{param['order_date']}' AND type='{param['type']}')")
         return self.cur.lastrowid
     # 刪除訂單
     def delete_orderlist(self, param: list) -> None:
@@ -81,7 +87,8 @@ class Mysql(object):
         return
     # 插入完成訂單
     def insert_finishedorder(self, pq: ll) -> None:
-        self.execute_line(f"INSERT INTO finishedorder(needdate,number,orderdate,type) VALUES('{pq[0][0]}','{pq[0][1]}','{pq[0][2]}',{pq[0][3]})")
+        self.execute_line(f"INSERT INTO finishedorder(needdate,number,orderdate,type) VALUES('{pq[0][0]}',\
+                            '{pq[0][1]}','{pq[0][2]}',{pq[0][3]})")
         return
     # 取得完成清單
     def get_finishedorder(self) -> tuple:
@@ -90,10 +97,11 @@ class Mysql(object):
 
     # 取得1G-POE、10G每日總產量
     def get_daily_production_sum(self) -> tuple:
-        self.execute_line(f"SELECT date, SUM(production) FROM product WHERE (machine='h06' OR machine='h14') GROUP BY date")
+        self.execute_line(f"SELECT date, SUM(production) FROM product WHERE (machine='h06' OR machine='h14') \
+                            GROUP BY date")
         sum_1G = self.cur.fetchall()
-        self.execute_line(f"SELECT date, SUM(production) FROM product WHERE (machine='h01' OR machine='h02' OR machine='h08' OR machine='h10' OR \
-                          machine='h15' OR machine='h19') GROUP BY date")
+        self.execute_line(f"SELECT date, SUM(production) FROM product WHERE (machine='h01' OR machine='h02' OR \
+                            machine='h08' OR machine='h10' OR machine='h15' OR machine='h19') GROUP BY date")
         sum_10G = self.cur.fetchall()
         return sum_1G, sum_10G
 

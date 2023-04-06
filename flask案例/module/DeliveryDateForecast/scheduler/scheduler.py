@@ -12,7 +12,8 @@ ll = list[list]
 
 buffer1G: int = 0
 buffer10G: int = 0
-pq: list = []
+pq1G: list = []
+pq10G: list = []
 finish_queue: list = []
 
 db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
@@ -39,16 +40,25 @@ def get_finish_queue() -> list:
 # 重新開啟網頁時使用(資料庫讀出訂單、buffer值)
 ## 回傳: 訂單
 def show_pq(yesterday_date: str = '2022-12-24') -> dict:
-    global pq, buffer1G, buffer10G, finish_queue
-    for element in db.get_orderlist():
+    global pq1G, pq10G, buffer1G, buffer10G, finish_queue
+    for element in db.get_1G_orderlist():
         l = []
         l.append(int(element[0]))
         l.append(datetime.strftime(element[1],'%Y-%m-%d'))
         l.append(int(element[2]))
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
-        if l not in pq:
-            pq.append(l)
+        if l not in pq1G:
+            pq1G.append(l)
+    for element in db.get_10G_orderlist():
+        l = []
+        l.append(int(element[0]))
+        l.append(datetime.strftime(element[1],'%Y-%m-%d'))
+        l.append(int(element[2]))
+        l.append(datetime.strftime(element[3],'%Y-%m-%d'))
+        l.append(element[4])
+        if l not in pq10G:
+            pq10G.append(l)
     for element in db.get_finishedorder():
         l = []
         l.append(int(element[0]))
@@ -61,34 +71,63 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     for element in db.get_buffer(fake_date):
         buffer1G = element[0]
         buffer10G = element[1]
-    l = []
-    for i in range(len(pq)):
-        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
+    l_1G = []
+    for i in range(len(pq1G)):
+        l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
+    l_10G = []
+    for i in range(len(pq10G)):
+        l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq':l,'finish_queue':l_l}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
-def insert_order(param: dict) -> dict:
+def insert_order(param: dict, machine_num_list_1G: dict=None, machine_num_list_10G: dict=None) -> dict:
     return_id = db.insert_orderlist(param=param)
-    pq.append([return_id]+list(param.values()))
-    pq.sort(key=lambda p:p[1])
-    l = []
-    for i in range(len(pq)):
-        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
-    return {"pq":l}
+    if return_id != 0:
+        if param['type'] == '1G-POE':
+            pq1G.append([return_id]+list(param.values()))
+            pq1G.sort(key=lambda p:p[1])
+        else:
+            pq10G.append([return_id]+list(param.values()))
+            pq10G.sort(key=lambda p:p[1])
+    l_1G = []
+    for i in range(len(pq1G)):
+        l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
+    l_10G = []
+    for i in range(len(pq10G)):
+        l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
+    new_order = {"id":return_id}
+    new_order.update(param)
+    if machine_num_list_1G == None and machine_num_list_10G == None:
+        return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":None, "machine_num_10G":None}
+    
+    machine_num_1G = []
+    for i in range(len(machine_num_list_1G)):
+        machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
+    machine_num_10G = []
+    for i in range(len(machine_num_list_10G)):
+        machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
+    return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":machine_num_1G, \
+    "machine_num_10G":machine_num_10G}
 
 # 刪除訂單 (訂單從資料庫、pq刪除)
 ## 回傳: 刪除後訂單
-def delete_order(param: dict) -> ll:
+def delete_order(param: dict) -> dict:
     db.delete_orderlist(param=param)
-    pq.remove(list(param.values()))
-    l = []
-    for i in range(len(pq)):
-        l.append({pq[i][0]:dict(zip(orderorder,pq[i]))})
-    return {"pq":l}
+    if param['type'] == '1G-POE':
+        pq1G.remove(list(param.values()))
+    else:
+        pq10G.remove(list(param.values()))
+    l_1G = []
+    for i in range(len(pq1G)):
+        l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
+    l_10G = []
+    for i in range(len(pq10G)):
+        l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
+    return {"pq_1G":l_1G,"pq_10G":l_10G}
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
@@ -162,3 +201,5 @@ def draw_buffer1G_graph(start_date: str, end_date: str) -> None:
 ## 圖片存成jpg
 def draw_buffer10G_graph(start_date: str, end_date: str) -> None:
     draw_graph(start_date, end_date, db, '10G_buffer', "10G buffer")
+
+    
