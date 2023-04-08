@@ -10,6 +10,7 @@
 # import MySQLdb
 import pymysql as MySQLdb
 import pandas as pd
+from datetime import timedelta, datetime
 
 ll = list[list]
 dataframe = pd.DataFrame
@@ -106,23 +107,31 @@ class Mysql(object):
         return sum_1G, sum_10G
 
     # 取得1G機台每日產量
-    def get_1G_production_sum(self, day: int) -> tuple:
+    def get_1G_production_sum(self, day: str) -> tuple:
         self.execute_line(f"SELECT SUM(production) FROM product WHERE date='{day.date()}' AND \
                           (machine='h06' OR machine='h14')")
         return self.cur.fetchall()
     # 取得1G機台每日產量
-    def get_10G_production_sum(self, day: int) -> tuple:
+    def get_10G_production_sum(self, day: str) -> tuple:
         self.execute_line(f"SELECT SUM(production) FROM product WHERE date='{day.date()}' AND \
                           (machine='h01' OR machine='h02' OR machine='h08' OR machine='h10' OR \
                           machine='h15' OR machine='h19')")
         return self.cur.fetchall()
     # 取得1G buffer每日值
-    def get_1G_buffer(self, day: int) -> tuple:
+    def get_1G_buffer(self, day: str) -> tuple:
         self.execute_line(f"SELECT buffer1g FROM buffer WHERE date='{day.date()}'")
         return self.cur.fetchall()
     # 取得10G buffer每日值
-    def get_10G_buffer(self, day: int) -> tuple:
+    def get_10G_buffer(self, day: str) -> tuple:
         self.execute_line(f"SELECT buffer10g FROM buffer WHERE date='{day.date()}'")
+    # 取得前14天的機台數
+    def get_num_machine(self, day: str) -> tuple:
+        d = datetime.strptime(day,"%Y-%m-%d").date()
+        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h06' OR machine='h14') AND production>=1500 GROUP BY date) AS B ON A.date = B.date")
+        product_1G = self.cur.fetchall()
+        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h01' OR machine='h02' OR machine='h08' OR machine='h10' OR machine='h15' OR machine='h19') AND production>=1500 GROUP BY date) AS B ON A.date = B.date")
+        product_10G = self.cur.fetchall()
+        return product_1G, product_10G
     ### 資料庫 class 的部分 應該可以直接用
     # def __init__(self,host,user,passwd,db,charset='utf8'):
         # 初始化 mysql 連接

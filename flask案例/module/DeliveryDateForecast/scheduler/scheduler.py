@@ -71,6 +71,19 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     for element in db.get_buffer(fake_date):
         buffer1G = element[0]
         buffer10G = element[1]
+    num_1G, num_10G = db.get_num_machine(fake_date)
+    num_1G = list(num_1G)
+    num_10G = list(num_10G)
+    for idx in range(len(num_1G)):
+        num_1G[idx] = [datetime.strftime(num_1G[idx][0],'%Y-%m-%d'), num_1G[idx][1]]
+    for idx in range(len(num_10G)):
+        num_10G[idx] = [datetime.strftime(num_10G[idx][0],'%Y-%m-%d'), num_10G[idx][1]]
+    m_1G = []
+    for i in range(len(num_1G)):
+        m_1G.append({num_1G[i][0]:dict(zip(datenumber,num_1G[i]))})
+    m_10G = []
+    for i in range(len(num_10G)):
+        m_10G.append({num_10G[i][0]:dict(zip(datenumber,num_10G[i]))})
     l_1G = []
     for i in range(len(pq1G)):
         l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
@@ -80,7 +93,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
@@ -166,8 +179,7 @@ def finish_order() -> list:
     return finish
 
 # 取得每日機台產量
-## 回傳: 
-
+## 回傳: 每日各機台產量
 def get_daily_product_sum() -> tuple:
     sum_1G, sum_10G = [list(x) for x in db.get_daily_production_sum()]
     for idx in range(len(sum_1G)):

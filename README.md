@@ -6,4 +6,8 @@ FLUSH PRIVILEGES;
 sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
 <!-- kill占用port的所有process -->
 kill $(lsof -t -i:8888)
+<!-- or -->
+sudo netstat -lpn |grep 8888
+kill -9 [pid]
+
 flask run -p 8888 -h 0.0.0.0
