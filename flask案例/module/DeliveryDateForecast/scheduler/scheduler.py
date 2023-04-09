@@ -116,19 +116,19 @@ def insert_order(param: dict, path: str=None) -> dict:
     new_order.update(param)
     if path == None:
         return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":None, "machine_num_10G":None}
-    
-    machine_num_1G = []
-    machine_num_10G = []
+
+    machine_num_list_1G = []
+    machine_num_list_10G = []
     df = read_file(path=path)
     for row in df.itertuples():
         if getattr(row,'product') == '1G-POE':
-            machine_num_1G.append([getattr(row,'date'), getattr(row,'number')])
+            machine_num_list_1G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
         else:
-            machine_num_10G.append([getattr(row,'date'), getattr(row,'number')])
-    
+            machine_num_list_10G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
+    machine_num_1G = []
+    machine_num_10G = []
     for i in range(len(machine_num_list_1G)):
         machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
-    
     for i in range(len(machine_num_list_10G)):
         machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
     return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":machine_num_1G, \
