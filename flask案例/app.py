@@ -15,7 +15,7 @@ def insert():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            return jsonify(s.insert_order(data))
+            return jsonify(s.insert_order(data,'machine.csv'))
     return "Fail"
 
 @app.route('/deleteorder', methods=['POST'])

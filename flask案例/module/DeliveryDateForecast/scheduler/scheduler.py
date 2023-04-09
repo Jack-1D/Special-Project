@@ -2,7 +2,7 @@
 目的: 處理交期排程
 '''
 from .DB_mysql import Mysql
-from .FileProcess import read_production, draw_graph
+from .FileProcess import read_file, draw_graph
 from datetime import datetime
 
 orderorder = ['id','need_date','number','order_date','type']
@@ -97,7 +97,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
-def insert_order(param: dict, machine_num_list_1G: dict=None, machine_num_list_10G: dict=None) -> dict:
+def insert_order(param: dict, path: str=None) -> dict:
     return_id = db.insert_orderlist(param=param)
     if return_id != 0:
         if param['type'] == '1G-POE':
@@ -114,13 +114,21 @@ def insert_order(param: dict, machine_num_list_1G: dict=None, machine_num_list_1
         l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
     new_order = {"id":return_id}
     new_order.update(param)
-    if machine_num_list_1G == None and machine_num_list_10G == None:
+    if path == None:
         return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":None, "machine_num_10G":None}
     
     machine_num_1G = []
+    machine_num_10G = []
+    df = read_file(path=path)
+    for row in df.itertuples():
+        if getattr(row,'product') == '1G-POE':
+            machine_num_1G.append([getattr(row,'date'), getattr(row,'number')])
+        else:
+            machine_num_10G.append([getattr(row,'date'), getattr(row,'number')])
+    
     for i in range(len(machine_num_list_1G)):
         machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
-    machine_num_10G = []
+    
     for i in range(len(machine_num_list_10G)):
         machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
     return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":machine_num_1G, \
@@ -148,7 +156,7 @@ def get_daily_total(path: str, yesterday_date: str = '2022-12-26') -> ll:
     global buffer1G
     global buffer10G
     db.delete_all_product()
-    df = read_production(path=path)
+    df = read_file(path=path)
     for row in df.itertuples():
         db.insert_product(row=row)
     for p in db.get_1G_production(yesterday_date=fake_date):

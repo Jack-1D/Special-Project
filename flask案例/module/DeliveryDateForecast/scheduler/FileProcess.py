@@ -12,7 +12,7 @@ dataframe = pd.DataFrame
 
 # 每日讀取機台產量
 ## 回傳: dataframe
-def read_production(path: str) -> dataframe:
+def read_file(path: str) -> dataframe:
     return pd.read_csv(f"{path}",encoding='big5')
 
 # 日期轉換

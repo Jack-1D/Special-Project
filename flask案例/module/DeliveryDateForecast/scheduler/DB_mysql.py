@@ -127,9 +127,16 @@ class Mysql(object):
     # 取得前14天的機台數
     def get_num_machine(self, day: str) -> tuple:
         d = datetime.strptime(day,"%Y-%m-%d").date()
-        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h06' OR machine='h14') AND production>=1500 GROUP BY date) AS B ON A.date = B.date")
+        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date \
+        BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num \
+        FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h06' OR \
+        machine='h14') AND production>=1500 GROUP BY date) AS B ON A.date = B.date")
         product_1G = self.cur.fetchall()
-        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h01' OR machine='h02' OR machine='h08' OR machine='h10' OR machine='h15' OR machine='h19') AND production>=1500 GROUP BY date) AS B ON A.date = B.date")
+        self.execute_line(f"SELECT A.date, IFNULL(B.num,0) FROM (SELECT date FROM orderlist.product WHERE date \
+        BETWEEN '{d-timedelta(days=14)}' AND '{d}' GROUP BY date) AS A LEFT JOIN (SELECT date, COUNT(*) AS num \
+        FROM orderlist.product WHERE date BETWEEN '{d-timedelta(days=14)}' AND '{d}' AND (machine='h01' OR \
+        machine='h02' OR machine='h08' OR machine='h10' OR machine='h15' OR machine='h19') AND production>=1500 \
+        GROUP BY date) AS B ON A.date = B.date")
         product_10G = self.cur.fetchall()
         return product_1G, product_10G
     ### 資料庫 class 的部分 應該可以直接用
