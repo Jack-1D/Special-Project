@@ -57,13 +57,13 @@ class Mysql(object):
         orderdate='{param['order_date']}' AND type='{param['type']}')")
         return self.cur.lastrowid
     # 刪除訂單
-    def delete_orderlist(self, param: list) -> None:
+    def delete_orderlist(self, param: dict) -> None:
         self.execute_line(f"DELETE FROM orderlist WHERE id={param['id']} AND needdate='{param['need_date']}' AND \
                           number={param['number']} AND orderdate='{param['order_date']}' AND type='{param['type']}'")
         return
     # 刪除所有機台生產資料
     def delete_all_product(self) -> None:
-        self.execute_linee("DELETE FROM product")
+        self.execute_line("DELETE FROM product")
         return
     # 插入機台生產資訊
     def insert_product(self, row: dataframe) -> None:
@@ -73,7 +73,7 @@ class Mysql(object):
         return
     # 取得昨天1G生產量
     def get_1G_production(self, yesterday_date: str) -> tuple:
-        self.execute(f"SELECT production FROM product WHERE date='{yesterday_date}' AND \
+        self.execute_line(f"SELECT production FROM product WHERE date='{yesterday_date}' AND \
                      (machine='h06' OR machine='h14')")
         return self.cur.fetchall()
     # 取得昨天10G生產量
@@ -88,8 +88,8 @@ class Mysql(object):
         return
     # 插入完成訂單
     def insert_finishedorder(self, pq: ll) -> None:
-        self.execute_line(f"INSERT INTO finishedorder(needdate,number,orderdate,type) VALUES('{pq[0][0]}',\
-                            '{pq[0][1]}','{pq[0][2]}',{pq[0][3]})")
+        self.execute_line(f"INSERT INTO finishedorder(id,needdate,number,orderdate,type) VALUES({pq[0]},\
+                            '{pq[1]}',{pq[2]},'{pq[3]}','{pq[4]}')")
         return
     # 取得完成清單
     def get_finishedorder(self) -> tuple:

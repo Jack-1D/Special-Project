@@ -33,6 +33,12 @@ def summ():
         sum_1G.update(sum_10G)
         return jsonify(sum_1G)
 
+@app.route('/addmachine',methods=['POST'])
+def addmachine():
+    if request.method == 'POST':
+        return jsonify(s.get_daily_total('1F設備生產數據.csv','2022-12-25'))
+        
+
 @app.route('/test',methods=['POST'])
 def test():
     if request.method == 'POST':

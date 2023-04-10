@@ -152,38 +152,61 @@ def delete_order(param: dict) -> dict:
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
-def get_daily_total(path: str, yesterday_date: str = '2022-12-26') -> ll:
-    global buffer1G
-    global buffer10G
+def get_daily_total(path: str, yesterday_date: str = '2022-12-24') -> ll:
+    global buffer1G, buffer10G, finish_queue
     db.delete_all_product()
     df = read_file(path=path)
     for row in df.itertuples():
         db.insert_product(row=row)
-    for p in db.get_1G_production(yesterday_date=fake_date):
+    for p in db.get_1G_production(yesterday_date):
         buffer1G += p[0]
-    for p in db.get_10G_production(yesterday_date=fake_date):
+    for p in db.get_10G_production(yesterday_date):
         buffer10G += p[0]
-    finish: list = []
-    while(len(pq)!=0 and buffer1G >= pq[0][3] and pq[0][2]=='1G-POE'):
-        finish.append(finish_order())
-    while(len(pq)!=0 and buffer10G >= pq[0][3] and buffer10G >= pq[0][2]=='10G'):
-        finish.append(finish_order())
-    db.update_buffer(yesterday_date=fake_date,buffer1G=buffer1G,buffer10G=buffer10G)
-    return finish
+    while(len(pq1G)!=0 and buffer1G >= pq1G[0][2]):
+        finish_queue.append(finish_order('1G-POE'))
+    while(len(pq10G)!=0 and buffer10G >= pq10G[0][2]):
+        finish_queue.append(finish_order('10G'))
+    db.update_buffer(yesterday_date,buffer1G,buffer10G)
+    
+    num_1G, num_10G = db.get_num_machine(yesterday_date)
+    num_1G = list(num_1G)
+    num_10G = list(num_10G)
+    for idx in range(len(num_1G)):
+        num_1G[idx] = [datetime.strftime(num_1G[idx][0],'%Y-%m-%d'), num_1G[idx][1]]
+    for idx in range(len(num_10G)):
+        num_10G[idx] = [datetime.strftime(num_10G[idx][0],'%Y-%m-%d'), num_10G[idx][1]]
+    m_1G = []
+    for i in range(len(num_1G)):
+        m_1G.append({num_1G[i][0]:dict(zip(datenumber,num_1G[i]))})
+    m_10G = []
+    for i in range(len(num_10G)):
+        m_10G.append({num_10G[i][0]:dict(zip(datenumber,num_10G[i]))})
+    l_1G = []
+    for i in range(len(pq1G)):
+        l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
+    l_10G = []
+    for i in range(len(pq10G)):
+        l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
+    l_l = []
+    for i in range(len(finish_queue)):
+        l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G}
 
 # 處理已完成訂單 (減少buffer量、從資料庫和pq刪除訂單)
 ## 回傳: 一筆已完成訂單list
-def finish_order() -> list:
-    global buffer1G
-    global buffer10G
+def finish_order(type: str) -> list:
+    global buffer1G, buffer10G, pq1G, pq10G
     finish: list = []
-    if(pq[0][2]=='1G-POE'):
-        buffer1G -= int(pq[0][3])
-    elif(pq[0][2]=='10G'):
-        buffer10G -= int(pq[0][3])
-    db.insert_finishedorder(pq=pq)
-    db.delete_orderlist(param=pq)
-    finish = pq.pop(0)
+    if(type=='1G-POE'):
+        buffer1G -= pq1G[0][2]
+        db.insert_finishedorder(pq=pq1G[0])
+        db.delete_orderlist(param={'id':pq1G[0][0], 'need_date':pq1G[0][1], 'number':pq1G[0][2], 'order_date':pq1G[0][3], 'type':pq1G[0][4]})
+        finish = pq1G.pop(0)
+    elif(type=='10G'):
+        buffer10G -= pq10G[0][2]
+        db.insert_finishedorder(pq=pq10G[0])
+        db.delete_orderlist(param={'id':pq10G[0][0], 'need_date':pq10G[0][1], 'number':pq10G[0][2], 'order_date':pq10G[0][3], 'type':pq10G[0][4]})
+        finish = pq10G.pop(0)
     return finish
 
 # 取得每日機台產量
