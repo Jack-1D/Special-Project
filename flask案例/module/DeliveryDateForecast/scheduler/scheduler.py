@@ -152,7 +152,7 @@ def delete_order(param: dict) -> dict:
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
-def get_daily_total(path: str, yesterday_date: str = '2022-12-24') -> ll:
+def get_daily_total(path: str, yesterday_date: str = '2022-12-24') -> dict:
     global buffer1G, buffer10G, finish_queue
     db.delete_all_product()
     df = read_file(path=path)
@@ -223,6 +223,11 @@ def get_daily_product_sum() -> tuple:
     for i in range(len(sum_10G)):
         l_l.append(dict(zip(datenumber,sum_10G[i])))
     return {'1G-POE':l}, {'10G':l_l}
+
+def find_order(ID: int) -> tuple:
+    result = db.search_order(ID)[0]
+    return_tuple = (result[0], datetime.strftime(result[1],'%Y-%m-%d'), result[2], datetime.strftime(result[3],'%Y-%m-%d'), result[4])
+    return dict(zip(orderorder, return_tuple))
 
 
 # 繪製1G機台每日產量圖

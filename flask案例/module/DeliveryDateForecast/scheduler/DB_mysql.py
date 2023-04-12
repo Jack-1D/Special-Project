@@ -139,6 +139,10 @@ class Mysql(object):
         GROUP BY date) AS B ON A.date = B.date")
         product_10G = self.cur.fetchall()
         return product_1G, product_10G
+
+    def search_order(self, ID: tuple) -> None:
+        self.execute_line(f"SELECT * FROM orderlist WHERE id={ID}")
+        return self.cur.fetchall()
     ### 資料庫 class 的部分 應該可以直接用
     # def __init__(self,host,user,passwd,db,charset='utf8'):
         # 初始化 mysql 連接

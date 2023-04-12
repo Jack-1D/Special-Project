@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from module.DeliveryDateForecast.scheduler import scheduler as s
+from module.DeliveryDateForecast.OutputPrediction import Function as func
 from datetime import date, timedelta
 import json
 app = Flask(__name__)
@@ -15,7 +16,7 @@ def insert():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            return jsonify(s.insert_order(data,'machine.csv'))
+            return jsonify(func.PredictDeliveryDate(s.insert_order(data,'machine.csv')))
     return "Fail"
 
 @app.route('/deleteorder', methods=['POST'])
@@ -38,6 +39,11 @@ def addmachine():
     if request.method == 'POST':
         return jsonify(s.get_daily_total('1F設備生產數據.csv','2022-12-25'))
         
+@app.route('/search',methods=['POST'])
+def search():
+    if request.method == 'POST':
+        data = request.get_json()
+        return jsonify(s.find_order(data['id']))
 
 @app.route('/test',methods=['POST'])
 def test():
