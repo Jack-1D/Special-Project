@@ -218,7 +218,34 @@ def UseMode1(data):
                 'type': value['type'],
                 'delivery_date': f'{delivery_date}'
             }
-    
+    #機台數
+    if len(data['pq_1G']) >0:
+        value = list(Output['pq_1G'][-1].values())[0]
+        year, month , day = SplitNeedDate(value['delivery_date'])
+        last_delivery_date = datetime.date(year, month, day)
+        for i in range(0, (last_delivery_date - today).days):
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': X1G_max_machine_num
+                }
+            }
+            Output['machine_num_need_1G'].append(tmpNum)
+
+    if len(data['pq_10G']) >0:
+        value = list(Output['pq_10G'][-1].values())[0]
+        year, month , day = SplitNeedDate(value['delivery_date'])
+        last_delivery_date = datetime.date(year, month, day)
+        for i in range(0, (last_delivery_date - today).days):
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': X10G_max_machine_num
+                }
+            }
+            Output['machine_num_need_10G'].append(tmpNum)
     return Output
 
 #mode 2
@@ -234,128 +261,132 @@ def UseMode2(data):
         }
     #1G預測
     tmp_buffer_1G = 0 #用來放滿足當前訂單還剩下多少
-    year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
-    last_need_date = datetime.date(year, month, day)
-    total_day = (last_need_date - today).days
-    future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
-    order_need_unit_list_1G = [0]*len(data['pq_1G'])
-    begin_index_1G = 0
-    for order in data['pq_1G']:
-        value = list(order.values())[0]
-        year, month , day = SplitNeedDate(value['need_date'])
-        need_date = datetime.date(year, month, day)
-        need_production = value['number']
-        need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
-        tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
-        order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
-        end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-        #print(f'begin: {begin_index_1G}')
-        #print(f'end: {end_index_1G}')
-        begin_index_1G = FillUnit_Mode2(need_unit, future_machine_need_list_1G, value['type'], begin_index_1G , end_index_1G)   #填滿unit，並回傳下次要從哪裡開始填
-        #print(f'buffer begin: {tmp_buffer_1G}')
-    
-    delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
-    for order in data['pq_1G']:
-        value = list(order.values())[0]
-        order_index = data['pq_1G'].index(order)
-        year, month, day = SplitNeedDate(delivery_date_list_1G[order_index])
-        delivery_date = datetime.date(year, month, day)
-        if delivery_date > need_date:
-            Output['status'] = False
-        tmpOrder = {
-            value['id']: {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+    if(len(data['pq_1G']) > 0):
+        year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
+        last_need_date = datetime.date(year, month, day)
+        total_day = (last_need_date - today).days
+        future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        order_need_unit_list_1G = [0]*len(data['pq_1G'])
+        begin_index_1G = 0
+        for order in data['pq_1G']:
+            value = list(order.values())[0]
+            year, month , day = SplitNeedDate(value['need_date'])
+            need_date = datetime.date(year, month, day)
+            need_production = value['number']
+            need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
+            tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
+            order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
+            end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            #print(f'begin: {begin_index_1G}')
+            #print(f'end: {end_index_1G}')
+            begin_index_1G = FillUnit_Mode2(need_unit, future_machine_need_list_1G, value['type'], begin_index_1G , end_index_1G)   #填滿unit，並回傳下次要從哪裡開始填
+            #print(f'buffer begin: {tmp_buffer_1G}')
+        
+        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
+        for order in data['pq_1G']:
+            value = list(order.values())[0]
+            order_index = data['pq_1G'].index(order)
+            year, month, day = SplitNeedDate(delivery_date_list_1G[order_index])
+            delivery_date = datetime.date(year, month, day)
+            if delivery_date > need_date:
+                Output['status'] = False
+            tmpOrder = {
+                value['id']: {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
             }
-        }
-        Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-        if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
-            Output['new_order']= {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
-            }
+            Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
+            if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
+                Output['new_order']= {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
     #10G預測
     tmp_buffer_10G = 0 #用來放滿足當前訂單還剩下多少
-    year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
-    last_need_date = datetime.date(year, month, day)
-    total_day = (last_need_date - today).days
-    future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
-    order_need_unit_list_10G = [0]*len(data['pq_10G'])
-    begin_index_10G = 0
-    for order in data['pq_10G']:
-        value = list(order.values())[0]
-        year, month , day = SplitNeedDate(value['need_date'])
-        need_date = datetime.date(year, month, day)
-        need_production = value['number']
-        need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
-        tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
-        order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
-        end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-        #print(f'begin: {begin_index_10G}')
-        #print(f'end: {end_index_10G}')
-        begin_index_10G = FillUnit_Mode2(need_unit, future_machine_need_list_10G, value['type'], begin_index_10G , end_index_10G)   #填滿unit，並回傳下次要從哪裡開始填
-        #print(f'buffer begin: {tmp_buffer_10G}')
-    
-    delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
-    for order in data['pq_10G']:
-        value = list(order.values())[0]
-        order_index = data['pq_10G'].index(order)
-        year, month, day = SplitNeedDate(delivery_date_list_10G[order_index])
-        delivery_date = datetime.date(year, month, day)
-        if delivery_date> need_date:
-            Output['status'] = False
-        tmpOrder = {
-            value['id']: {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+    if(len(data['pq_10G']) > 0):
+        year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
+        last_need_date = datetime.date(year, month, day)
+        total_day = (last_need_date - today).days
+        future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        order_need_unit_list_10G = [0]*len(data['pq_10G'])
+        begin_index_10G = 0
+        for order in data['pq_10G']:
+            value = list(order.values())[0]
+            year, month , day = SplitNeedDate(value['need_date'])
+            need_date = datetime.date(year, month, day)
+            need_production = value['number']
+            need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
+            tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
+            order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
+            end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            #print(f'begin: {begin_index_10G}')
+            #print(f'end: {end_index_10G}')
+            begin_index_10G = FillUnit_Mode2(need_unit, future_machine_need_list_10G, value['type'], begin_index_10G , end_index_10G)   #填滿unit，並回傳下次要從哪裡開始填
+            #print(f'buffer begin: {tmp_buffer_10G}')
+        
+        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
+        for order in data['pq_10G']:
+            value = list(order.values())[0]
+            order_index = data['pq_10G'].index(order)
+            year, month, day = SplitNeedDate(delivery_date_list_10G[order_index])
+            delivery_date = datetime.date(year, month, day)
+            if delivery_date> need_date:
+                Output['status'] = False
+            tmpOrder = {
+                value['id']: {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
             }
-        }
-        Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-        if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
-            Output['new_order']= {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
-            }
+            Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
+            if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
+                Output['new_order']= {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
     #計算1G機台數
-    for i in range(0, len(future_machine_need_list_1G)): #計算距離今天i天的機台數
-        if(future_machine_need_list_1G[i] == 0):
-            break
-        date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-        tmpNum = {
-            date: {
-                'date': date,
-                'number': future_machine_need_list_1G[i]
+    if(len(data['pq_1G']) > 0):
+        for i in range(0, len(future_machine_need_list_1G)): #計算距離今天i天的機台數
+            if(future_machine_need_list_1G[i] == 0):
+                break
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': future_machine_need_list_1G[i]
+                }
             }
-        }
-        Output['machine_num_need_1G'].append(tmpNum)
+            Output['machine_num_need_1G'].append(tmpNum)
     #計算10G機台數
-    for i in range(0, len(future_machine_need_list_10G)): #計算距離今天i天的機台數
-        if(future_machine_need_list_10G[i] == 0):
-            break
-        date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-        tmpNum = {
-            date: {
-                'date': date,
-                'number': future_machine_need_list_10G[i]
+    if(len(data['pq_10G']) > 0):
+        for i in range(0, len(future_machine_need_list_10G)): #計算距離今天i天的機台數
+            if(future_machine_need_list_10G[i] == 0):
+                break
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': future_machine_need_list_10G[i]
+                }
             }
-        }
-        Output['machine_num_need_10G'].append(tmpNum)
+            Output['machine_num_need_10G'].append(tmpNum)
     return Output
 
 #mode 3
@@ -371,154 +402,159 @@ def UseMode3(data):
         }
     #1G預測
     tmp_buffer_1G = 0 #用來放滿足當前訂單還剩下多少
-    year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
-    last_need_date = datetime.date(year, month, day)
-    total_day = (last_need_date - today).days
-    future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
-    order_need_unit_list_1G = [0]*len(data['pq_1G'])
-    begin_index_1G = 0
-    future_machine_limit_list_1G = data['machine_num_1G']
-    for i in range (len(future_machine_limit_list_1G), len(future_machine_need_list_1G)):
-        future_machine_limit_list_1G.append(future_machine_limit_list_1G[-1])
-    for order in data['pq_1G']:
-        value = list(order.values())[0]
-        year, month , day = SplitNeedDate(value['need_date'])
-        need_date = datetime.date(year, month, day)
-        need_production = value['number']
-        need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
-        tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
-        order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
-        end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-        #print(f'begin: {begin_index_1G}')
-        #print(f'end: {end_index_1G}')
-        begin_index_1G = FillUnit_Mode3(need_unit, future_machine_need_list_1G, future_machine_limit_list_1G, begin_index_1G , end_index_1G)
-        #print(f'buffer begin: {tmp_buffer_1G}')
-    
-    delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
-    for order in data['pq_1G']:
-        value = list(order.values())[0]
-        order_index = data['pq_1G'].index(order)
-        year, month, day = SplitNeedDate(delivery_date_list_1G[order_index])
-        delivery_date = datetime.date(year, month, day)
-        if delivery_date > need_date:
-            Output['status'] = False
-        tmpOrder = {
-            value['id']: {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+    if(len(data['pq_1G']) > 0):
+        year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
+        last_need_date = datetime.date(year, month, day)
+        total_day = (last_need_date - today).days
+        future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        order_need_unit_list_1G = [0]*len(data['pq_1G'])
+        begin_index_1G = 0
+        future_machine_limit_list_1G = data['machine_num_1G']
+        for i in range (len(future_machine_limit_list_1G), len(future_machine_need_list_1G)):
+            future_machine_limit_list_1G.append(future_machine_limit_list_1G[-1])
+        for order in data['pq_1G']:
+            value = list(order.values())[0]
+            year, month , day = SplitNeedDate(value['need_date'])
+            need_date = datetime.date(year, month, day)
+            need_production = value['number']
+            need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
+            tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
+            order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
+            end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            #print(f'begin: {begin_index_1G}')
+            #print(f'end: {end_index_1G}')
+            begin_index_1G = FillUnit_Mode3(need_unit, future_machine_need_list_1G, future_machine_limit_list_1G, begin_index_1G , end_index_1G)
+            #print(f'buffer begin: {tmp_buffer_1G}')
+        
+        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
+        for order in data['pq_1G']:
+            value = list(order.values())[0]
+            order_index = data['pq_1G'].index(order)
+            year, month, day = SplitNeedDate(delivery_date_list_1G[order_index])
+            delivery_date = datetime.date(year, month, day)
+            if delivery_date > need_date:
+                Output['status'] = False
+            tmpOrder = {
+                value['id']: {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
             }
-        }
-        Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-        if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
-            Output['new_order']= {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
-            }
+            Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
+            if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
+                Output['new_order']= {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
     #10G預測
     tmp_buffer_10G = 0 #用來放滿足當前訂單還剩下多少
-    year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
-    last_need_date = datetime.date(year, month, day)
-    total_day = (last_need_date - today).days
-    future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
-    order_need_unit_list_10G = [0]*len(data['pq_10G'])
-    begin_index_10G = 0
-    future_machine_limit_list_10G = data['machine_num_10G']
-    for i in range (len(future_machine_limit_list_10G), len(future_machine_need_list_10G)):
-        future_machine_limit_list_10G.append(future_machine_limit_list_10G[-1])
-    for order in data['pq_10G']:
-        value = list(order.values())[0]
-        year, month , day = SplitNeedDate(value['need_date'])
-        need_date = datetime.date(year, month, day)
-        need_production = value['number']
-        need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
-        tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
-        order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
-        end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-        #print(f'begin: {begin_index_10G}')
-        #print(f'end: {end_index_10G}')
-        begin_index_10G = FillUnit_Mode3(need_unit, future_machine_need_list_10G, future_machine_limit_list_10G, begin_index_10G , end_index_10G)
-        #print(f'buffer begin: {tmp_buffer_10G}')
-    
-    delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
-    for order in data['pq_10G']:
-        value = list(order.values())[0]
-        order_index = data['pq_10G'].index(order)
-        year, month, day = SplitNeedDate(delivery_date_list_10G[order_index])
-        delivery_date = datetime.date(year, month, day)
-        if delivery_date> need_date:
-            Output['status'] = False
-        tmpOrder = {
-            value['id']: {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+    if(len(data['pq_10G']) > 0):
+        year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
+        last_need_date = datetime.date(year, month, day)
+        total_day = (last_need_date - today).days
+        future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        order_need_unit_list_10G = [0]*len(data['pq_10G'])
+        begin_index_10G = 0
+        future_machine_limit_list_10G = data['machine_num_10G']
+        for i in range (len(future_machine_limit_list_10G), len(future_machine_need_list_10G)):
+            future_machine_limit_list_10G.append(future_machine_limit_list_10G[-1])
+        for order in data['pq_10G']:
+            value = list(order.values())[0]
+            year, month , day = SplitNeedDate(value['need_date'])
+            need_date = datetime.date(year, month, day)
+            need_production = value['number']
+            need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
+            tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
+            order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
+            end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            #print(f'begin: {begin_index_10G}')
+            #print(f'end: {end_index_10G}')
+            begin_index_10G = FillUnit_Mode3(need_unit, future_machine_need_list_10G, future_machine_limit_list_10G, begin_index_10G , end_index_10G)
+            #print(f'buffer begin: {tmp_buffer_10G}')
+        
+        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
+        for order in data['pq_10G']:
+            value = list(order.values())[0]
+            order_index = data['pq_10G'].index(order)
+            year, month, day = SplitNeedDate(delivery_date_list_10G[order_index])
+            delivery_date = datetime.date(year, month, day)
+            if delivery_date> need_date:
+                Output['status'] = False
+            tmpOrder = {
+                value['id']: {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
             }
-        }
-        Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-        if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
-            Output['new_order']= {
-                'id': value['id'],
-                'need_date': value['need_date'],
-                'number': value['number'],
-                'order_date': value['order_date'],
-                'type': value['type'],
-                'delivery_date': f'{delivery_date}'
-            }
+            Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
+            if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
+                Output['new_order']= {
+                    'id': value['id'],
+                    'need_date': value['need_date'],
+                    'number': value['number'],
+                    'order_date': value['order_date'],
+                    'type': value['type'],
+                    'delivery_date': f'{delivery_date}'
+                }
     #計算1G機台數
-    for i in range(0, len(future_machine_need_list_1G)): #計算距離今天i天的機台數
-        if(future_machine_need_list_1G[i] == 0):
-            break
-        date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-        tmpNum = {
-            date: {
-                'date': date,
-                'number': future_machine_need_list_1G[i]
+    if(len(data['pq_1G']) > 0):
+        for i in range(0, len(future_machine_need_list_1G)): #計算距離今天i天的機台數
+            if(future_machine_need_list_1G[i] == 0):
+                break
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': future_machine_need_list_1G[i]
+                }
             }
-        }
-        Output['machine_num_need_1G'].append(tmpNum)
+            Output['machine_num_need_1G'].append(tmpNum)
     #計算10G機台數
-    for i in range(0, len(future_machine_need_list_10G)): #計算距離今天i天的機台數
-        if(future_machine_need_list_10G[i] == 0):
-            break
-        date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
-        tmpNum = {
-            date: {
-                'date': date,
-                'number': future_machine_need_list_10G[i]
+    if(len(data['pq_10G']) > 0):
+        for i in range(0, len(future_machine_need_list_10G)): #計算距離今天i天的機台數
+            if(future_machine_need_list_10G[i] == 0):
+                break
+            date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
+            tmpNum = {
+                date: {
+                    'date': date,
+                    'number': future_machine_need_list_10G[i]
+                }
             }
-        }
-        Output['machine_num_need_10G'].append(tmpNum)
+            Output['machine_num_need_10G'].append(tmpNum)
     return Output
 
 #交期預測函數
 def PredictDeliveryDate(data):
     # data = json.load(myJson)
-    newOrder = {
-        data['new_order']['id']: {
-            'id': data['new_order']['id'],
-            'need_date': data['new_order']['need_date'],
-            'number': data['new_order']['number'],
-            'order_date': data['new_order']['order_date'],
-            'type': data['new_order']['type']
+    if data.get('new_order') != None:
+        newOrder = {
+            data['new_order']['id']: {
+                'id': data['new_order']['id'],
+                'need_date': data['new_order']['need_date'],
+                'number': data['new_order']['number'],
+                'order_date': data['new_order']['order_date'],
+                'type': data['new_order']['type']
+            }
         }
-    }
-    if(data['new_order']['type'] == '1G-POE'):  #新訂單若為1G-POE，插入pq_1G
-        data['pq_1G'].append(newOrder)
-        data["pq_1G"] = sorted(data["pq_1G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
-    elif(data['new_order']['type'] == '10G'):   #新訂單若為10G，插入pq_10G
-        data['pq_10G'].append(newOrder)
-        data["pq_10G"] = sorted(data["pq_10G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
+        if(data['new_order']['type'] == '1G-POE'):  #新訂單若為1G-POE，插入pq_1G
+            data['pq_1G'].append(newOrder)
+            data["pq_1G"] = sorted(data["pq_1G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
+        elif(data['new_order']['type'] == '10G'):   #新訂單若為10G，插入pq_10G
+            data['pq_10G'].append(newOrder)
+            data["pq_10G"] = sorted(data["pq_10G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
     global mode
     if mode == 1:
         return UseMode1(data)
