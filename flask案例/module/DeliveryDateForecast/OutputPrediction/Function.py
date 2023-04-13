@@ -549,12 +549,6 @@ def PredictDeliveryDate(data):
                 'type': data['new_order']['type']
             }
         }
-        if(data['new_order']['type'] == '1G-POE'):  #新訂單若為1G-POE，插入pq_1G
-            data['pq_1G'].append(newOrder)
-            data["pq_1G"] = sorted(data["pq_1G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
-        elif(data['new_order']['type'] == '10G'):   #新訂單若為10G，插入pq_10G
-            data['pq_10G'].append(newOrder)
-            data["pq_10G"] = sorted(data["pq_10G"], key=lambda k: k[list(k.keys())[0]]["need_date"])
     global mode
     if mode == 1:
         return UseMode1(data)

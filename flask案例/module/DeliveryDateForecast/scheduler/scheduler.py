@@ -5,7 +5,7 @@ from .DB_mysql import Mysql
 from .FileProcess import read_file, draw_graph
 from datetime import datetime
 
-orderorder = ['id','need_date','number','order_date','type']
+orderorder = ['id','need_date','number','order_date','type','delivery_date']
 datenumber = ['date','number']
 
 ll = list[list]
@@ -48,6 +48,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
         l.append(int(element[2]))
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
+        l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
         if l not in pq1G:
             pq1G.append(l)
     for element in db.get_10G_orderlist():
@@ -57,6 +58,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
         l.append(int(element[2]))
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
+        l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
         if l not in pq10G:
             pq10G.append(l)
     for element in db.get_finishedorder():
@@ -224,11 +226,21 @@ def get_daily_product_sum() -> tuple:
         l_l.append(dict(zip(datenumber,sum_10G[i])))
     return {'1G-POE':l}, {'10G':l_l}
 
+# 尋找特定ID的訂單
+## 回傳: 訂單資訊
 def find_order(ID: int) -> tuple:
     result = db.search_order(ID)[0]
-    return_tuple = (result[0], datetime.strftime(result[1],'%Y-%m-%d'), result[2], datetime.strftime(result[3],'%Y-%m-%d'), result[4])
+    return_tuple = (result[0], datetime.strftime(result[1],'%Y-%m-%d'), result[2], datetime.strftime(result[3],'%Y-%m-%d'), result[4], None if result[5] == None else datetime.strftime(result[5],'%Y-%m-%d'))
     return dict(zip(orderorder, return_tuple))
 
+def update_delivery(params: tuple) -> None:
+    for param in params['pq_1G']:
+        for paramvalue in param.values():
+            db.update_delivery_date(paramvalue)
+    for param in params['pq_10G']:
+        for paramvalue in param.values():
+            db.update_delivery_date(paramvalue)
+    return
 
 # 繪製1G機台每日產量圖
 ## 圖片存成jpg

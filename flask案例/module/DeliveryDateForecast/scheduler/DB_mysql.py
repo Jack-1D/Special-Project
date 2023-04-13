@@ -143,6 +143,10 @@ class Mysql(object):
     def search_order(self, ID: tuple) -> None:
         self.execute_line(f"SELECT * FROM orderlist WHERE id={ID}")
         return self.cur.fetchall()
+
+    def update_delivery_date(self, param: tuple) -> None:
+        self.execute_line(f"REPLACE INTO orderlist VALUES({param['id']},'{param['need_date']}',{param['number']},'{param['order_date']}','{param['type']}','{param['delivery_date']}')")
+        return
     ### 資料庫 class 的部分 應該可以直接用
     # def __init__(self,host,user,passwd,db,charset='utf8'):
         # 初始化 mysql 連接

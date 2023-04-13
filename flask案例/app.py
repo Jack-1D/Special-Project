@@ -16,7 +16,9 @@ def insert():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            return jsonify(func.PredictDeliveryDate(s.insert_order(data,'machine.csv')))
+            return_value = func.PredictDeliveryDate(s.insert_order(data,'machine.csv'))
+            s.update_delivery(return_value)
+            return jsonify(return_value)
     return "Fail"
 
 @app.route('/deleteorder', methods=['POST'])
