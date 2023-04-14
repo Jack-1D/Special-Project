@@ -39,7 +39,9 @@ def summ():
 @app.route('/addmachine',methods=['POST'])
 def addmachine():
     if request.method == 'POST':
-        return jsonify(s.get_daily_total('1F設備生產數據.csv','2022-12-25'))
+        return_value = func.PredictDeliveryDate(s.get_daily_total('1F設備生產數據.csv','2022-12-25'))
+        s.update_delivery(return_value)
+        return jsonify(return_value)
         
 @app.route('/search',methods=['POST'])
 def search():
