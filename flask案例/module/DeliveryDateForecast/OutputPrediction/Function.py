@@ -9,7 +9,7 @@ X1G_mean = getX1G_mean()
 X1G_len = getX1G_len()
 X10G_buffer = 0
 X1G_buffer = 0
-mode = 2
+mode = 1
 X10G_max_machine_num = 6
 X1G_max_machine_num = 9
 X10G_cycle = 1 #10G只有日班
@@ -559,7 +559,8 @@ def UseMode3(data):
 
 #交期預測函數
 def PredictDeliveryDate(data):
-    # data = json.load(myJson)
+    if data.get('mode') != None:
+        ChooseMode(data['mode'])
     if data.get('new_order') != None:
         newOrder = {
             data['new_order']['id']: {

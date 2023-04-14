@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from module.DeliveryDateForecast.scheduler import scheduler as s
 from module.DeliveryDateForecast.OutputPrediction import Function as func
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import json
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -9,7 +9,9 @@ app.config["DEBUG"] = True
 
 @app.route('/', methods=['GET','POST'])
 def show():
-    return jsonify(s.show_pq())
+    return_value = s.show_pq()
+    return_value.update(func.PredictDeliveryDate(return_value))
+    return jsonify(return_value)
 
 @app.route('/insertorder', methods=['POST'])
 def insert():
@@ -26,7 +28,9 @@ def delete():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            return jsonify(s.delete_order(data))
+            return_value = func.PredictDeliveryDate(s.delete_order(data))
+            s.update_delivery(return_value)
+            return jsonify(return_value)
     return "Fail"
 
 @app.route('/sum', methods=['POST'])
@@ -43,13 +47,40 @@ def addmachine():
         s.update_delivery(return_value)
         return jsonify(return_value)
         
-@app.route('/search',methods=['POST'])
+@app.route('/search', methods=['POST'])
 def search():
     if request.method == 'POST':
         data = request.get_json()
         return jsonify(s.find_order(data['id']))
 
-@app.route('/test',methods=['POST'])
+@app.route('/change', methods=['POST'])
+def changemode():
+    if request.method == 'POST':
+        data = request.get_json()
+        return_value = s.show_pq()
+        return_value.update(data)
+        return_value.update(func.PredictDeliveryDate(return_value))
+        s.update_delivery(return_value)
+
+        # 只回傳時間內的需求機台數
+        date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(14)]
+        index_list = []
+        for index, row in enumerate(return_value['machine_num_need_1G']):
+            for element in row.items():
+                if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
+                    index_list.append(index)
+        for index in sorted(index_list, reverse=True):
+            del return_value['machine_num_need_1G'][index]
+        index_list = []
+        for index, row in enumerate(return_value['machine_num_need_10G']):
+            for element in row.items():
+                if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
+                    index_list.append(index)
+        for index in sorted(index_list, reverse=True):
+            del return_value['machine_num_need_10G'][index]
+        return return_value
+
+@app.route('/test', methods=['POST'])
 def test():
     if request.method == 'POST':
         jason = {"finish_queue":[{"4":{"id":4, "need_date":"2022-12-10", "number":2000, "order_date":"2022-12-01", "type":"1G-POE"},\
