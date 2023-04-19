@@ -4,7 +4,7 @@ from module.DeliveryDateForecast.OutputPrediction import Function as func
 from datetime import date, timedelta, datetime
 import json
 app = Flask(__name__)
-app.config["DEBUG"] = True
+app.config["DEBUG"] = False
 
 
 @app.route('/', methods=['GET','POST'])
@@ -116,22 +116,25 @@ def test():
         "2022-12-11":{"date":"2022-12-11", "number":6},\
         "2022-12-12":{"date":"2022-12-12", "number":3},\
         "2022-12-13":{"date":"2022-12-13", "number":1},\
-        "2022-12-14":{"date":"2022-12-14", "number":5}}]}
+        "2022-12-14":{"date":"2022-12-14", "number":5}}],\
+        "machine_num_need_10G": [],\
+        "machine_num_need_1G": [{"2023-04-14": {"date": "2023-04-14","number": 1}},\
+        {"2023-04-15": {"date": "2023-04-15","number": 1}},\
+        {"2023-04-16": {"date": "2023-04-16","number": 1}},\
+        {"2023-04-17": {"date": "2023-04-17","number": 1}},\
+        {"2023-04-18": {"date": "2023-04-18","number": 1}},\
+        {"2023-04-19": {"date": "2023-04-19","number": 1}},\
+        {"2023-04-20": {"date": "2023-04-20","number": 1}},\
+        {"2023-04-21": {"date": "2023-04-21","number": 1}},\
+        {"2023-04-22": {"date": "2023-04-22","number": 1}},\
+        {"2023-04-23": {"date": "2023-04-23","number": 1}},\
+        {"2023-04-24": {"date": "2023-04-24","number": 1}},\
+        {"2023-04-25": {"date": "2023-04-25","number": 1}},\
+        {"2023-04-26": {"date": "2023-04-26","number": 1}}],\
+        "new_order": {},\
+        "status": True
+        }
         return jsonify(jason)
-
-
-@app.route('/login', methods=['POST'])
-def login():
-    if request.is_json: # 判斷是不是 JSON
-        data = request.get_json() # 從資料中獲取值
-        name1 = data.get('name1', None) # 解析資料，若不是 JSON，則返回 None
-
-        ## 你撰寫完成的模組，引入方式
-        ## name1，以JSON key 作為後續 API　的參數串接
-        # result = scheduler.whoAreYou(name1)
-    else:
-        result = 'Not JSON Data'
-    return result
 
 
 if __name__ == "__main__":

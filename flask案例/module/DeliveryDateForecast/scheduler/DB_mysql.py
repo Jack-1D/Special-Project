@@ -57,10 +57,11 @@ class Mysql(object):
         orderdate='{param['order_date']}' AND type='{param['type']}')")
         return self.cur.lastrowid
     # 刪除訂單
-    def delete_orderlist(self, param: dict) -> None:
-        self.execute_line(f"DELETE FROM orderlist WHERE id={param['id']} AND needdate='{param['need_date']}' AND \
-                          number={param['number']} AND orderdate='{param['order_date']}' AND type='{param['type']}'")
-        return
+    def delete_orderlist(self, param: dict) -> tuple:
+        self.execute_line(f"SELECT * FROM orderlist WHERE id={param['id']}")
+        detail = self.cur.fetchall()[0]
+        self.execute_line(f"DELETE FROM orderlist WHERE id={param['id']}")
+        return detail
     # 刪除所有機台生產資料
     def delete_all_product(self) -> None:
         self.execute_line("DELETE FROM product")

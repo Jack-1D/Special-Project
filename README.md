@@ -11,3 +11,6 @@ sudo netstat -lpn |grep 8888
 kill -9 [pid]
 
 flask run -p 8888 -h 0.0.0.0
+<!-- 背景執行 -->
+sudo pip3 install gunicorn
+sudo gunicorn --pythonpath /home/pdclab/.local/lib/python3.10/site-packages -b 0.0.0.0:8888 app:app --daemon

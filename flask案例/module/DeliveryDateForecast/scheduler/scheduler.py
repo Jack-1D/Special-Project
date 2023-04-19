@@ -139,11 +139,14 @@ def insert_order(param: dict, path: str=None) -> dict:
 # 刪除訂單 (訂單從資料庫、pq刪除)
 ## 回傳: 刪除後訂單
 def delete_order(param: dict) -> dict:
-    db.delete_orderlist(param=param)
-    if param['type'] == '1G-POE':
-        pq1G.remove(list(param.values()))
+    detail = list(db.delete_orderlist(param=param))
+    detail[1] = datetime.strftime(detail[1],'%Y-%m-%d')
+    detail[3] = datetime.strftime(detail[3],'%Y-%m-%d')
+    detail[5] = datetime.strftime(detail[5],'%Y-%m-%d')
+    if detail[4] == '1G-POE':
+        pq1G.remove(detail)
     else:
-        pq10G.remove(list(param.values()))
+        pq10G.remove(detail)
     l_1G = []
     for i in range(len(pq1G)):
         l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
