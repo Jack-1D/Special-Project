@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify
 from module.DeliveryDateForecast.scheduler import scheduler as s
 from module.DeliveryDateForecast.OutputPrediction import Function as func
 from datetime import date, timedelta, datetime
-import json
+from werkzeug.utils import secure_filename
+import json, os
 app = Flask(__name__)
 app.config["DEBUG"] = False
 
@@ -43,7 +44,7 @@ def summ():
 @app.route('/addmachine',methods=['POST'])
 def addmachine():
     if request.method == 'POST':
-        return_value = func.PredictDeliveryDate(s.get_daily_total('1F設備生產數據.csv','2022-12-25'))
+        return_value = func.PredictDeliveryDate(s.get_daily_total('machine_status.csv','2022-12-25'))
         s.update_delivery(return_value)
         return jsonify(return_value)
         
@@ -79,6 +80,22 @@ def changemode():
         for index in sorted(index_list, reverse=True):
             del return_value['machine_num_need_10G'][index]
         return return_value
+
+UPLOAD_FOLDER = '/home/pdclab/Special-Project/flask案例'
+ALLOWED_EXTENSIONS = set(['csv'])
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+            return "Success"
+    return "Fail"
 
 @app.route('/test', methods=['POST'])
 def test():
