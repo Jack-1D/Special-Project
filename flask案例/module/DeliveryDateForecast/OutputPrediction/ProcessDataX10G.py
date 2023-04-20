@@ -25,6 +25,9 @@ def getX10G_error_mean():
 def getX10G_error_len():
     return X10G_error_len
 
+def getX10G_design_weight_mean():
+    return X10G_design_weight_mean
+
 # 10G產量資料處理
 df10G=pd.read_csv('10G_data.csv',encoding='big5')
 #去除記錄錯誤
@@ -107,3 +110,18 @@ X10G_normal_mean = X10G_normal['產能'].mean()
 X10G_normal_len = len(X10G_normal)
 X10G_error_mean = X10G_error['產能'].mean()
 X10G_error_len = len(X10G_error)
+
+#設計權重計算產能
+interval_1 = 5  #區間寬度n 最後n筆
+interval_2 = 10 #區間寬度n interval_1之後的n筆
+interval_3 = 10 #同上概念
+interval_4 = 5  #同上概念
+interva1_1_weitht = 0.4 #權重 interval_1最重要 因為最靠近預測當日
+interval_2_weight = 0.3
+interval_3_weight = 0.2
+interval_4_weight = 0.1
+interval_1_mean = X10G['產能'][-(interval_1 + 1):-1].mean()
+interval_2_mean = X10G['產能'][-(interval_2 + interval_1 + 1):-(interval_1 + 1)].mean()
+interval_3_mean = X10G['產能'][-(interval_3 + interval_2+ interval_1 + 1):-(interval_2 + interval_1 + 1)].mean()
+interval_4_mean = X10G['產能'][-(interval_4 + interval_3 + interval_2+ interval_1 + 1):-(interval_3 + interval_2 + interval_1 + 1)].mean()
+X10G_design_weight_mean = (interval_1_mean * interva1_1_weitht) + (interval_2_mean * interval_2_weight) + (interval_3_mean * interval_3_weight) + (interval_4_mean * interval_4_weight)

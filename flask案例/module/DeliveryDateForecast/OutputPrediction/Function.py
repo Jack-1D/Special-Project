@@ -3,9 +3,9 @@ from .ProcessDataX10G import *
 from .ProcessDataX1G import *
 import datetime
 
-X10G_mean = getX10G_mean()
+X10G_mean = getX10G_design_weight_mean()
 X10G_len = getX10G_len()
-X1G_mean = getX1G_mean()
+X1G_mean = getX1G_design_weight_mean()
 X1G_len = getX1G_len()
 X10G_buffer = 0
 X1G_buffer = 0
