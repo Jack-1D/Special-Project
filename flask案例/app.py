@@ -7,7 +7,7 @@ import json, os
 app = Flask(__name__)
 app.config["DEBUG"] = False
 
-
+# 預設machine_num_need是mode 1
 @app.route('/', methods=['GET','POST'])
 def show():
     return_value = s.show_pq()
@@ -19,7 +19,7 @@ def insert():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            return_value = func.PredictDeliveryDate(s.insert_order(data,'machine.csv'))
+            return_value = func.PredictDeliveryDate(s.insert_order(data))
             s.update_delivery(return_value)
             return jsonify(return_value)
     return "Fail"
@@ -60,25 +60,30 @@ def changemode():
         data = request.get_json()
         return_value = s.show_pq()
         return_value.update(data)
+        if data['mode'] == 3:
+            return_value.update(s.add_limit('machine.csv'))
+        else:
+            return_value.update(s.add_limit())
         return_value.update(func.PredictDeliveryDate(return_value))
+        
         s.update_delivery(return_value)
 
         # 只回傳時間內的需求機台數
-        date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(14)]
-        index_list = []
-        for index, row in enumerate(return_value['machine_num_need_1G']):
-            for element in row.items():
-                if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
-                    index_list.append(index)
-        for index in sorted(index_list, reverse=True):
-            del return_value['machine_num_need_1G'][index]
-        index_list = []
-        for index, row in enumerate(return_value['machine_num_need_10G']):
-            for element in row.items():
-                if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
-                    index_list.append(index)
-        for index in sorted(index_list, reverse=True):
-            del return_value['machine_num_need_10G'][index]
+        # date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(14)]
+        # index_list = []
+        # for index, row in enumerate(return_value['machine_num_need_1G']):
+        #     for element in row.items():
+        #         if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
+        #             index_list.append(index)
+        # for index in sorted(index_list, reverse=True):
+        #     del return_value['machine_num_need_1G'][index]
+        # index_list = []
+        # for index, row in enumerate(return_value['machine_num_need_10G']):
+        #     for element in row.items():
+        #         if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
+        #             index_list.append(index)
+        # for index in sorted(index_list, reverse=True):
+        #     del return_value['machine_num_need_10G'][index]
         return return_value
 
 UPLOAD_FOLDER = '/home/pdclab/Special-Project/flask案例'

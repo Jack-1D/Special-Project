@@ -4,6 +4,7 @@
 from .DB_mysql import Mysql
 from .FileProcess import read_file, draw_graph
 from datetime import datetime
+from ..OutputPrediction import Function as func
 
 orderorder = ['id','need_date','number','order_date','type','delivery_date']
 datenumber = ['date','number']
@@ -29,10 +30,6 @@ def get_buffer1G() -> int:
 def get_buffer10G() -> int:
     return buffer10G
 
-# 回傳: pq
-def get_pq() -> list:
-    return pq
-
 # 回傳: finish_queue
 def get_finish_queue() -> list:
     return finish_queue
@@ -40,7 +37,7 @@ def get_finish_queue() -> list:
 # 重新開啟網頁時使用(資料庫讀出訂單、buffer值)
 ## 回傳: 訂單
 def show_pq(yesterday_date: str = '2022-12-24') -> dict:
-    global pq1G, pq10G, buffer1G, buffer10G, finish_queue
+    global pq1G, pq10G, finish_queue, buffer1G, buffer10G
     for element in db.get_1G_orderlist():
         l = []
         l.append(int(element[0]))
@@ -95,7 +92,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G, "mode":func.mode}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
@@ -134,7 +131,7 @@ def insert_order(param: dict, path: str=None) -> dict:
     for i in range(len(machine_num_list_10G)):
         machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
     return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":machine_num_1G, \
-    "machine_num_10G":machine_num_10G}
+    "machine_num_10G":machine_num_10G, "mode":func.mode}
 
 # 刪除訂單 (訂單從資料庫、pq刪除)
 ## 回傳: 刪除後訂單
@@ -154,6 +151,26 @@ def delete_order(param: dict) -> dict:
     for i in range(len(pq10G)):
         l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
     return {"pq_1G":l_1G,"pq_10G":l_10G}
+
+# 換模式前都要先經過add_limit轉換資料
+def add_limit(path: str=None) -> dict:
+    if path == None:
+        return {"machine_num_1G":None, "machine_num_10G":None}
+    machine_num_list_1G = []
+    machine_num_list_10G = []
+    df = read_file(path=path)
+    for row in df.itertuples():
+        if getattr(row,'product') == '1G-POE':
+            machine_num_list_1G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
+        else:
+            machine_num_list_10G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
+    machine_num_1G = []
+    machine_num_10G = []
+    for i in range(len(machine_num_list_1G)):
+        machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
+    for i in range(len(machine_num_list_10G)):
+        machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
+    return {"machine_num_1G":machine_num_1G, "machine_num_10G":machine_num_10G}
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
@@ -232,6 +249,8 @@ def get_daily_product_sum() -> tuple:
 # 尋找特定ID的訂單
 ## 回傳: 訂單資訊
 def find_order(ID: int) -> tuple:
+    if len(db.search_order(ID)) == 0:
+        return {}
     result = db.search_order(ID)[0]
     return_tuple = (result[0], datetime.strftime(result[1],'%Y-%m-%d'), result[2], datetime.strftime(result[3],'%Y-%m-%d'), result[4], None if result[5] == None else datetime.strftime(result[5],'%Y-%m-%d'))
     return dict(zip(orderorder, return_tuple))
