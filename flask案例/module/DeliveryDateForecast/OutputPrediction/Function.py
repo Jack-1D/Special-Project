@@ -169,7 +169,9 @@ def UseMode1(data):
             }
         }
         Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-        if data.get('new_order') != None:
+        if data.get('new_order') == None:
+            continue
+        if len(data.get('new_order')) != 0:
             if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                 Output['new_order']= {
                     'id': value['id'],
@@ -217,7 +219,9 @@ def UseMode1(data):
             }
         }
         Output['pq_10G'].append(tmpOrder)   #所有10G的訂單預測交期加入pq_10G
-        if data.get('new_order') != None:
+        if data.get('new_order') == None:
+            continue
+        if len(data.get('new_order')) != 0:
             if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                 Output['new_order']= {
                     'id': value['id'],
@@ -312,7 +316,9 @@ def UseMode2(data):
                 }
             }
             Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-            if data.get('new_order') != None:
+            if data.get('new_order') == None:
+                continue
+            if len(data.get('new_order')) != 0:
                 if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                     Output['new_order']= {
                         'id': value['id'],
@@ -366,7 +372,9 @@ def UseMode2(data):
                 }
             }
             Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-            if data.get('new_order') != None:
+            if data.get('new_order') == None:
+                continue
+            if len(data.get('new_order')) != 0:
                 if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                     Output['new_order']= {
                         'id': value['id'],
@@ -462,7 +470,9 @@ def UseMode3(data):
                 }
             }
             Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-            if data.get('new_order') != None:
+            if data.get('new_order') == None:
+                continue
+            if len(data.get('new_order')) != 0:
                 if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                     Output['new_order']= {
                         'id': value['id'],
@@ -519,7 +529,9 @@ def UseMode3(data):
                 }
             }
             Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
-            if data.get('new_order') != None:
+            if data.get('new_order') == None:
+                continue
+            if len(data.get('new_order')) != 0:
                 if value['id'] == data['new_order']['id']:    #如果當前訂單是新訂單，另外存在new_order
                     Output['new_order']= {
                         'id': value['id'],
@@ -559,16 +571,8 @@ def UseMode3(data):
 
 #交期預測函數
 def PredictDeliveryDate(data):
-    if data.get('new_order') != None:
-        newOrder = {
-            data['new_order']['id']: {
-                'id': data['new_order']['id'],
-                'need_date': data['new_order']['need_date'],
-                'number': data['new_order']['number'],
-                'order_date': data['new_order']['order_date'],
-                'type': data['new_order']['type']
-            }
-        }
+    if data.get('mode') != None:
+        ChooseMode(data['mode'])
     global mode
     if mode == 1:
         return UseMode1(data)

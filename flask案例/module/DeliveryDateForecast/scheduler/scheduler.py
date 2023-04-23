@@ -2,7 +2,7 @@
 目的: 處理交期排程
 '''
 from .DB_mysql import Mysql
-from .FileProcess import read_file, draw_graph
+from .FileProcess import read_file
 from datetime import datetime, timedelta, date
 from ..OutputPrediction import Function as func
 
