@@ -559,8 +559,6 @@ def UseMode3(data):
 
 #交期預測函數
 def PredictDeliveryDate(data):
-    if data.get('mode') != None:
-        ChooseMode(data['mode'])
     if data.get('new_order') != None:
         newOrder = {
             data['new_order']['id']: {
