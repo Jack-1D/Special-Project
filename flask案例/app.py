@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify
 from module.DeliveryDateForecast.scheduler import scheduler as s
 from module.DeliveryDateForecast.OutputPrediction import Function as func
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from werkzeug.utils import secure_filename
-import json, os, copy
+import os, copy
 app = Flask(__name__)
 app.config["DEBUG"] = False
 show_date_length = 14
+today_date_unformated = datetime.utcnow().replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+yesterday_date = datetime.strftime(today_date_unformated-timedelta(days=1),'%Y-%m-%d')
 
 # 預設machine_num_need是mode 1
 @app.route('/', methods=['GET','POST'])
@@ -44,13 +46,6 @@ def summ():
         sum_1G, sum_10G = s.get_daily_product_sum()
         sum_1G.update(sum_10G)
         return jsonify(sum_1G)
-
-@app.route('/addmachine',methods=['POST'])
-def addmachine():
-    if request.method == 'POST':
-        return_value = func.PredictDeliveryDate(s.get_daily_total('machine_status.csv','2022-12-25'))
-        s.update_delivery(return_value)
-        return jsonify(return_value)
         
 @app.route('/search', methods=['POST'])
 def search():
@@ -120,6 +115,8 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+            return_value = func.PredictDeliveryDate(s.get_daily_total('machine_status.csv',yesterday_date))
+            s.update_delivery(return_value)
             return "Success"
     return "Fail"
 

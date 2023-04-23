@@ -20,8 +20,7 @@ finish_queue: list = []
 db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
 
 
-# fake_date = datetime.strftime(date.today()-timedelta(days=1),'%Y-%m-%d')
-fake_date = '2022-12-24'
+yesterday_date = datetime.strftime(date.today()-timedelta(days=1),'%Y-%m-%d')
 
 # 回傳: Buffer1G
 def get_buffer1G() -> int:
@@ -69,7 +68,7 @@ def show_pq() -> dict:
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
         finish_queue.append(l)
-    for element in db.get_buffer(fake_date):
+    for element in db.get_buffer(yesterday_date):
         buffer1G = element[0]
         buffer10G = element[1]
     l_1G = []
@@ -162,35 +161,24 @@ def add_limit(path: str=None) -> dict:
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
-def get_daily_total(path: str, yesterday_date: str = '2022-12-24') -> dict:
+def get_daily_total(path: str, yesterday_date: str = yesterday_date) -> dict:
     global buffer1G, buffer10G, finish_queue
     db.delete_all_product()
     df = read_file(path=path)
     for row in df.itertuples():
+        print(row)
         db.insert_product(row=row)
     for p in db.get_1G_production(yesterday_date):
         buffer1G += p[0]
+        print(buffer1G)
     for p in db.get_10G_production(yesterday_date):
         buffer10G += p[0]
+        print(buffer10G)
     while(len(pq1G)!=0 and buffer1G >= pq1G[0][2]):
         finish_queue.append(finish_order('1G-POE'))
     while(len(pq10G)!=0 and buffer10G >= pq10G[0][2]):
         finish_queue.append(finish_order('10G'))
     db.update_buffer(yesterday_date,buffer1G,buffer10G)
-    
-    num_1G, num_10G = db.get_num_machine(yesterday_date)
-    num_1G = list(num_1G)
-    num_10G = list(num_10G)
-    for idx in range(len(num_1G)):
-        num_1G[idx] = [datetime.strftime(num_1G[idx][0],'%Y-%m-%d'), num_1G[idx][1]]
-    for idx in range(len(num_10G)):
-        num_10G[idx] = [datetime.strftime(num_10G[idx][0],'%Y-%m-%d'), num_10G[idx][1]]
-    m_1G = []
-    for i in range(len(num_1G)):
-        m_1G.append({num_1G[i][0]:dict(zip(datenumber,num_1G[i]))})
-    m_10G = []
-    for i in range(len(num_10G)):
-        m_10G.append({num_10G[i][0]:dict(zip(datenumber,num_10G[i]))})
     l_1G = []
     for i in range(len(pq1G)):
         l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
@@ -200,7 +188,7 @@ def get_daily_total(path: str, yesterday_date: str = '2022-12-24') -> dict:
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':None, 'machine_num_10G':None,"mode":1}
 
 # 處理已完成訂單 (減少buffer量、從資料庫和pq刪除訂單)
 ## 回傳: 一筆已完成訂單list
