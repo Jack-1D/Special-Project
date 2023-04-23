@@ -250,25 +250,3 @@ def update_delivery(params: tuple) -> None:
         for paramvalue in param.values():
             db.update_delivery_date(paramvalue)
     return
-
-# 繪製1G機台每日產量圖
-## 圖片存成jpg
-def draw_1G_graph(start_date: str, end_date: str) -> None:
-    draw_graph(start_date, end_date, db, '1G-POE_production', "1G production")
-
-# 繪製10G機台每日產量圖
-## 圖片存成jpg
-def draw_10G_graph(start_date: str, end_date: str) -> None:
-    draw_graph(start_date, end_date, db, '10G_production', "10G production")
-
-# 繪製1G buffer每日剩餘圖
-## 圖片存成jpg
-def draw_buffer1G_graph(start_date: str, end_date: str) -> None:
-    draw_graph(start_date, end_date, db, '1G-POE_buffer', "1G buffer")
-
-# 繪製10G buffer每日剩餘圖
-## 圖片存成jpg
-def draw_buffer10G_graph(start_date: str, end_date: str) -> None:
-    draw_graph(start_date, end_date, db, '10G_buffer', "10G buffer")
-
-    

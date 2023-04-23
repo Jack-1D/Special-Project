@@ -171,39 +171,3 @@ def test():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8888)
-    
-
-    # test code
-
-    # while(True):
-    #     command = input("Action: ")
-    #     if(command=='1'):
-    #         s.show_pq()
-    #     elif(command=='2'):
-    #         l=input("list: ").split(" ")
-    #         s.insert_order(l)
-    #     elif(command=='3'):
-    #         l=input("list: ").split(" ")
-    #         s.delete_order(l)
-    #     elif(command=='4'):
-    #         path,d=input("path&date: ").split(" ")
-    #         yesterday_date = date.today()-timedelta(days=1)
-    #         print(s.get_daily_total(path=path,yesterday_date=d))
-    #     elif(command=='5'):
-    #         print(s.show_finish_order())
-    #     elif(command=='6'):
-    #         start,end=input("Dates: ").split(" ")
-    #         s.draw_1G_graph(start_date=start, end_date=end)
-    #     elif(command=='7'):
-    #         start,end=input("Dates: ").split(" ")
-    #         s.draw_10G_graph(start_date=start, end_date=end)
-    #     elif(command=='8'):
-    #         start,end=input("Dates: ").split(" ")
-    #         s.draw_buffer1G_graph(start_date=start, end_date=end)
-    #     elif(command=='9'):
-    #         start,end=input("Dates: ").split(" ")
-    #         s.draw_buffer10G_graph(start_date=start, end_date=end)
-    #     print(f"pq:{s.get_pq()}")
-    #     print(f"buffer1G: {s.get_buffer1G()}")
-    #     print(f"buffer10G: {s.get_buffer10G()}")
-    

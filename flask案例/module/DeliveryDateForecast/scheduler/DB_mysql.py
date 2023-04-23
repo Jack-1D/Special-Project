@@ -146,16 +146,3 @@ class Mysql(object):
     def update_delivery_date(self, param: tuple) -> None:
         self.execute_line(f"REPLACE INTO orderlist VALUES({param['id']},'{param['need_date']}',{param['number']},'{param['order_date']}','{param['type']}','{param['delivery_date']}')")
         return
-    ### 資料庫 class 的部分 應該可以直接用
-    # def __init__(self,host,user,passwd,db,charset='utf8'):
-        # 初始化 mysql 連接
-        # try:
-        #     self.conn = MySQLdb.connect(host=host,user=user,password=passwd,db=db)
-        # except MySQLdb.Error as e:
-        #     print("========= mysql connect error ==========")
-        #     print(e)
-
-    # def orderList(self):
-    #     sql = "SELECT * FROM ORDERLIST ORDER BY NEEDDATE"
-    #     self.cursor.execute(sql)
-    #     return self.cursor.fetchall()
