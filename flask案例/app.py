@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import json, os
 app = Flask(__name__)
 app.config["DEBUG"] = False
+show_date_length = 14
 
 # 預設machine_num_need是mode 1
 @app.route('/', methods=['GET','POST'])
@@ -74,26 +75,35 @@ def changemode():
             return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
         print("predict2:",return_value)
         predict_result = func.PredictDeliveryDate(return_value)
-        return_value['pq_1G'], return_value['pq_10G'], return_value['machine_num_need_1G'], return_value['machine_num_need_10G'] = predict_result['pq_1G'], predict_result['pq_10G'], predict_result['machine_num_need_1G'], predict_result['machine_num_need_10G']
+        return_value['pq_1G'], return_value['pq_10G'], return_value['machine_num_need_1G'], \
+            return_value['machine_num_need_10G'] = predict_result['pq_1G'], predict_result['pq_10G'], \
+                predict_result['machine_num_need_1G'], predict_result['machine_num_need_10G']
         print("predict3:",return_value)
         s.update_delivery(return_value)
 
         # 只回傳時間內的需求機台數
-        # date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(14)]
-        # index_list = []
-        # for index, row in enumerate(return_value['machine_num_need_1G']):
-        #     for element in row.items():
-        #         if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
-        #             index_list.append(index)
-        # for index in sorted(index_list, reverse=True):
-        #     del return_value['machine_num_need_1G'][index]
-        # index_list = []
-        # for index, row in enumerate(return_value['machine_num_need_10G']):
-        #     for element in row.items():
-        #         if datetime.strptime(element[0],"%Y-%m-%d") not in date_range:
-        #             index_list.append(index)
-        # for index in sorted(index_list, reverse=True):
-        #     del return_value['machine_num_need_10G'][index]
+        date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(show_date_length)]
+        return_machine_need = [{datetime.strftime(datetime.strptime(data['start_date'],"%Y-%m-%d") + \
+                                timedelta(days=idx),"%Y-%m-%d"):{'date':datetime.strftime(datetime.strptime\
+                                (data['start_date'],"%Y-%m-%d") + timedelta(days=idx),"%Y-%m-%d"), 'number':0}} \
+                                    for idx in range(14)]
+        for _, row in enumerate(return_value['machine_num_need_1G']):
+            for element in row.items():
+                if datetime.strptime(element[0],"%Y-%m-%d") in date_range:
+                    return_machine_need[return_machine_need.index({element[0]:{"date":element[0],"number":0}})] = \
+                        {element[0]:element[1]}
+        return_value['machine_num_need_1G'] = return_machine_need
+
+        return_machine_need = [{datetime.strftime(datetime.strptime(data['start_date'],"%Y-%m-%d") + \
+                                timedelta(days=idx),"%Y-%m-%d"):{'date':datetime.strftime(datetime.strptime\
+                                (data['start_date'],"%Y-%m-%d") + timedelta(days=idx),"%Y-%m-%d"), 'number':0}} \
+                                    for idx in range(14)]
+        for _, row in enumerate(return_value['machine_num_need_10G']):
+            for element in row.items():
+                if datetime.strptime(element[0],"%Y-%m-%d") in date_range:
+                    return_machine_need[return_machine_need.index({element[0]:{"date":element[0],"number":0}})] = \
+                        {element[0]:element[1]}
+        return_value['machine_num_need_10G'] = return_machine_need
         return return_value
 
 UPLOAD_FOLDER = '/home/pdclab/Special-Project/flask案例'
