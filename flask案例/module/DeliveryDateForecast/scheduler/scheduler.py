@@ -3,7 +3,7 @@
 '''
 from .DB_mysql import Mysql
 from .FileProcess import read_file, draw_graph
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from ..OutputPrediction import Function as func
 
 orderorder = ['id','need_date','number','order_date','type','delivery_date']
@@ -20,7 +20,8 @@ finish_queue: list = []
 db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
 
 
-fake_date = "2022-12-24"
+# fake_date = datetime.strftime(date.today()-timedelta(days=1),'%Y-%m-%d')
+fake_date = '2022-12-24'
 
 # 回傳: Buffer1G
 def get_buffer1G() -> int:
@@ -35,9 +36,12 @@ def get_finish_queue() -> list:
     return finish_queue
 
 # 重新開啟網頁時使用(資料庫讀出訂單、buffer值)
+# mode初始為1
 ## 回傳: 訂單
-def show_pq(yesterday_date: str = '2022-12-24') -> dict:
+def show_pq() -> dict:
     global pq1G, pq10G, finish_queue, buffer1G, buffer10G
+    pq1G.clear()
+    pq10G.clear()
     for element in db.get_1G_orderlist():
         l = []
         l.append(int(element[0]))
@@ -46,8 +50,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
         l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
-        if l not in pq1G:
-            pq1G.append(l)
+        pq1G.append(l)
     for element in db.get_10G_orderlist():
         l = []
         l.append(int(element[0]))
@@ -56,8 +59,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
         l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
-        if l not in pq10G:
-            pq10G.append(l)
+        pq10G.append(l)
     for element in db.get_finishedorder():
         l = []
         l.append(int(element[0]))
@@ -70,6 +72,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     for element in db.get_buffer(fake_date):
         buffer1G = element[0]
         buffer10G = element[1]
+    print(fake_date)
     num_1G, num_10G = db.get_num_machine(fake_date)
     num_1G = list(num_1G)
     num_10G = list(num_10G)
@@ -92,7 +95,7 @@ def show_pq(yesterday_date: str = '2022-12-24') -> dict:
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G, "mode":func.mode}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G, "mode":1}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單

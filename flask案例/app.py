@@ -11,7 +11,10 @@ app.config["DEBUG"] = False
 @app.route('/', methods=['GET','POST'])
 def show():
     return_value = s.show_pq()
+    print("origin:",return_value)
     return_value.update(func.PredictDeliveryDate(return_value))
+    print("predict:",return_value)
+    s.update_delivery(return_value)
     return jsonify(return_value)
 
 @app.route('/insertorder', methods=['POST'])
@@ -59,13 +62,18 @@ def changemode():
     if request.method == 'POST':
         data = request.get_json()
         return_value = s.show_pq()
-        return_value.update(data)
+        return_value['mode'] = data['mode']
+        return_value['start_date'] = data['start_date']
+        print("origin2:",return_value)
         if data['mode'] == 3:
-            return_value.update(s.add_limit('machine.csv'))
+            return_value['machine_num_1G'] = s.add_limit('machine.csv')['machine_num_1G']
+            return_value['machine_num_10G'] = s.add_limit('machine.csv')['machine_num_10G']
         else:
-            return_value.update(s.add_limit())
-        return_value.update(func.PredictDeliveryDate(return_value))
-        
+            return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
+            return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
+        print("predict2:",return_value)
+        return_value['pq_1G'] = func.PredictDeliveryDate(return_value)['pq_1G']
+        print("predict3:",return_value)
         s.update_delivery(return_value)
 
         # 只回傳時間內的需求機台數
