@@ -29,7 +29,7 @@ def getX10G_design_weight_mean():
     return X10G_design_weight_mean
 
 # 10G產量資料處理
-df10G=pd.read_csv('10G_data.csv',encoding='big5')
+df10G=pd.read_csv('machine_status.csv',encoding='big5')
 #去除記錄錯誤
 for i in df10G.index:
     if df10G.loc[i, '產能'] <= record_error_threshold:

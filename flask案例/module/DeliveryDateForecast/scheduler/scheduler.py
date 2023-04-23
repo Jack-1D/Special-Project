@@ -157,6 +157,7 @@ def add_limit(path: str=None) -> dict:
         machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
     for i in range(len(machine_num_list_10G)):
         machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
+    print("machine",machine_num_1G)
     return {"machine_num_1G":machine_num_1G, "machine_num_10G":machine_num_10G}
 
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)

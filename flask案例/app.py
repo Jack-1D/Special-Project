@@ -3,7 +3,7 @@ from module.DeliveryDateForecast.scheduler import scheduler as s
 from module.DeliveryDateForecast.OutputPrediction import Function as func
 from datetime import date, timedelta, datetime
 from werkzeug.utils import secure_filename
-import json, os
+import json, os, copy
 app = Flask(__name__)
 app.config["DEBUG"] = False
 show_date_length = 14
@@ -66,19 +66,20 @@ def changemode():
         return_value = s.show_pq()
         return_value['mode'] = data['mode']
         return_value['start_date'] = data['start_date']
-        print("origin2:",return_value)
         if data['mode'] == 3:
-            return_value['machine_num_1G'] = s.add_limit('machine.csv')['machine_num_1G']
-            return_value['machine_num_10G'] = s.add_limit('machine.csv')['machine_num_10G']
+            return_value['machine_num_1G'] = s.add_limit('machine_num.csv')['machine_num_1G']
+            return_value['machine_num_10G'] = s.add_limit('machine_num.csv')['machine_num_10G']
         else:
             return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
-            return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
-        print("predict2:",return_value)
-        predict_result = func.PredictDeliveryDate(return_value)
-        return_value['pq_1G'], return_value['pq_10G'], return_value['machine_num_need_1G'], \
-            return_value['machine_num_need_10G'] = predict_result['pq_1G'], predict_result['pq_10G'], \
-                predict_result['machine_num_need_1G'], predict_result['machine_num_need_10G']
-        print("predict3:",return_value)
+            return_value['machine_num_10G'] = s.add_limit()['machine_num_10G']
+        return_copy = copy.deepcopy(return_value)
+        predict_result = func.PredictDeliveryDate(return_copy)
+        
+        
+        return_value['pq_1G'] = predict_result['pq_1G']
+        return_value['pq_10G'] = predict_result['pq_10G']
+        return_value['machine_num_need_1G'] = predict_result['machine_num_need_1G']
+        return_value['machine_num_need_10G'] = predict_result['machine_num_need_10G']
         s.update_delivery(return_value)
 
         # 只回傳時間內的需求機台數

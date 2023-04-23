@@ -31,7 +31,7 @@ def getX1G_design_weight_mean():
     return X1G_design_weight_mean
 #####1G產量資料處理#####
 
-df1G=pd.read_csv('1G_data.csv',encoding='big5')
+df1G=pd.read_csv('machine_status.csv',encoding='big5')
 df1G['生產日期'] = pd.to_datetime(df1G['生產日期'], format = '%Y/%m/%d')
 #去除記錄錯誤
 for i in df1G.index:
