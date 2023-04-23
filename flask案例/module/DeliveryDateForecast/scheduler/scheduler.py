@@ -42,6 +42,7 @@ def show_pq() -> dict:
     global pq1G, pq10G, finish_queue, buffer1G, buffer10G
     pq1G.clear()
     pq10G.clear()
+    finish_queue.clear()
     for element in db.get_1G_orderlist():
         l = []
         l.append(int(element[0]))
@@ -67,25 +68,10 @@ def show_pq() -> dict:
         l.append(int(element[2]))
         l.append(datetime.strftime(element[3],'%Y-%m-%d'))
         l.append(element[4])
-        if l not in finish_queue:
-            finish_queue.append(l)
+        finish_queue.append(l)
     for element in db.get_buffer(fake_date):
         buffer1G = element[0]
         buffer10G = element[1]
-    print(fake_date)
-    num_1G, num_10G = db.get_num_machine(fake_date)
-    num_1G = list(num_1G)
-    num_10G = list(num_10G)
-    for idx in range(len(num_1G)):
-        num_1G[idx] = [datetime.strftime(num_1G[idx][0],'%Y-%m-%d'), num_1G[idx][1]]
-    for idx in range(len(num_10G)):
-        num_10G[idx] = [datetime.strftime(num_10G[idx][0],'%Y-%m-%d'), num_10G[idx][1]]
-    m_1G = []
-    for i in range(len(num_1G)):
-        m_1G.append({num_1G[i][0]:dict(zip(datenumber,num_1G[i]))})
-    m_10G = []
-    for i in range(len(num_10G)):
-        m_10G.append({num_10G[i][0]:dict(zip(datenumber,num_10G[i]))})
     l_1G = []
     for i in range(len(pq1G)):
         l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
@@ -95,11 +81,12 @@ def show_pq() -> dict:
     l_l = []
     for i in range(len(finish_queue)):
         l_l.append({finish_queue[i][0]:dict(zip(orderorder,finish_queue[i]))})
-    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':m_1G, 'machine_num_10G':m_10G, "mode":1}
+    return {'pq_1G':l_1G,'pq_10G':l_10G,'finish_queue':l_l, 'machine_num_1G':None, 'machine_num_10G':None, "mode":1}
 
 # 插入訂單 (訂單資訊插入資料庫、pq)
 ## 回傳: 插入後訂單
 def insert_order(param: dict, path: str=None) -> dict:
+    global pq1G, pq10G
     return_id = db.insert_orderlist(param=param)
     if return_id != 0:
         if param['type'] == '1G-POE':
@@ -117,43 +104,40 @@ def insert_order(param: dict, path: str=None) -> dict:
     new_order = {"id":return_id}
     new_order.update(param)
     if path == None:
-        return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":None, "machine_num_10G":None}
-
-    machine_num_list_1G = []
-    machine_num_list_10G = []
-    df = read_file(path=path)
-    for row in df.itertuples():
-        if getattr(row,'product') == '1G-POE':
-            machine_num_list_1G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
-        else:
-            machine_num_list_10G.append([datetime.strptime(getattr(row,'date'),"%Y/%m/%d").strftime("%Y-%m-%d"), getattr(row,'number')])
-    machine_num_1G = []
-    machine_num_10G = []
-    for i in range(len(machine_num_list_1G)):
-        machine_num_1G.append({machine_num_list_1G[i][0]:dict(zip(datenumber,machine_num_list_1G[i]))})
-    for i in range(len(machine_num_list_10G)):
-        machine_num_10G.append({machine_num_list_10G[i][0]:dict(zip(datenumber,machine_num_list_10G[i]))})
-    return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":machine_num_1G, \
-    "machine_num_10G":machine_num_10G, "mode":func.mode}
+        return {"pq_1G":l_1G, "pq_10G":l_10G, "new_order":new_order, "machine_num_1G":None, "machine_num_10G":None, "mode":1}
 
 # 刪除訂單 (訂單從資料庫、pq刪除)
 ## 回傳: 刪除後訂單
 def delete_order(param: dict) -> dict:
-    detail = list(db.delete_orderlist(param=param))
-    detail[1] = datetime.strftime(detail[1],'%Y-%m-%d')
-    detail[3] = datetime.strftime(detail[3],'%Y-%m-%d')
-    detail[5] = datetime.strftime(detail[5],'%Y-%m-%d')
-    if detail[4] == '1G-POE':
-        pq1G.remove(detail)
-    else:
-        pq10G.remove(detail)
+    global pq1G, pq10G
+    db.delete_orderlist(param=param)
+    pq1G.clear()
+    pq10G.clear()
+    for element in db.get_1G_orderlist():
+        l = []
+        l.append(int(element[0]))
+        l.append(datetime.strftime(element[1],'%Y-%m-%d'))
+        l.append(int(element[2]))
+        l.append(datetime.strftime(element[3],'%Y-%m-%d'))
+        l.append(element[4])
+        l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
+        pq1G.append(l)
+    for element in db.get_10G_orderlist():
+        l = []
+        l.append(int(element[0]))
+        l.append(datetime.strftime(element[1],'%Y-%m-%d'))
+        l.append(int(element[2]))
+        l.append(datetime.strftime(element[3],'%Y-%m-%d'))
+        l.append(element[4])
+        l.append(None if element[5] == None else datetime.strftime(element[5],'%Y-%m-%d'))
+        pq10G.append(l)
     l_1G = []
     for i in range(len(pq1G)):
         l_1G.append({pq1G[i][0]:dict(zip(orderorder,pq1G[i]))})
     l_10G = []
     for i in range(len(pq10G)):
         l_10G.append({pq10G[i][0]:dict(zip(orderorder,pq10G[i]))})
-    return {"pq_1G":l_1G,"pq_10G":l_10G}
+    return {"pq_1G":l_1G, "pq_10G":l_10G, "mode":1}
 
 # 換模式前都要先經過add_limit轉換資料
 def add_limit(path: str=None) -> dict:

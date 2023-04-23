@@ -57,6 +57,7 @@ def search():
         data = request.get_json()
         return jsonify(s.find_order(data['id']))
 
+# mode 3會用 default的檔案
 @app.route('/change', methods=['POST'])
 def changemode():
     if request.method == 'POST':
@@ -72,7 +73,8 @@ def changemode():
             return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
             return_value['machine_num_1G'] = s.add_limit()['machine_num_1G']
         print("predict2:",return_value)
-        return_value['pq_1G'] = func.PredictDeliveryDate(return_value)['pq_1G']
+        predict_result = func.PredictDeliveryDate(return_value)
+        return_value['pq_1G'], return_value['pq_10G'], return_value['machine_num_need_1G'], return_value['machine_num_need_10G'] = predict_result['pq_1G'], predict_result['pq_10G'], predict_result['machine_num_need_1G'], predict_result['machine_num_need_10G']
         print("predict3:",return_value)
         s.update_delivery(return_value)
 
