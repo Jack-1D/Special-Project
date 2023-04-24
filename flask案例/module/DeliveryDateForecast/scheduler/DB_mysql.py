@@ -2,12 +2,37 @@
 目的: 資料庫中處理排程所需的資料
 對資料庫的增刪查改
 '''
+# from tkinter import COMMAND
+# import errno
 import pymysql as MySQLdb
 import pandas as pd
 from datetime import timedelta, datetime
 
 ll = list[list]
 dataframe = pd.DataFrame
+
+# def ping(self, reconnect=True):
+#     """
+#     Check if the server is alive.
+
+#     :param reconnect: If the connection is closed, reconnect.
+#     :raise Error: If the connection is closed and reconnect=False.
+#     """
+#     if self._sock is None:
+#         if reconnect:
+#             self.connect()
+#             reconnect = False
+#         else:
+#             raise err.Error("Already closed")
+#     try:
+#         self._execute_command(COMMAND.COM_PING, "")
+#         self._read_ok_packet()
+#     except Exception:
+#         if reconnect:
+#             self.connect()
+#             self.ping(False)
+#         else:
+#             raise
 
 class Mysql(object):
     def __init__(self, host: str, user: str, password: str, db: str, port: int):

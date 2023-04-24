@@ -129,7 +129,6 @@ def UseMode1(data):
         'new_order':{},
         'machine_num_need_1G':[],
         'machine_num_need_10G' :[],
-        'status':True
         }
     #1G預測
     tmp_buffer_1G = 0 #用來放滿足當前訂單還剩下多少
@@ -156,8 +155,6 @@ def UseMode1(data):
         print(f'produce: {need_day*X1G_oneday_max_production}')
         print("==========")
         '''
-        if delivery_date > need_date:   #超出需求日
-            Output['status'] = False
         tmpOrder = {
             value['id']: {
                 'id': value['id'],
@@ -165,9 +162,12 @@ def UseMode1(data):
                 'number': value['number'],
                 'order_date': value['order_date'],
                 'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+                'delivery_date': f'{delivery_date}',
+                'status':True
             }
         }
+        if delivery_date > need_date:   #超出需求日
+            tmpOrder[value['id']]['status'] = False
         Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
         if data.get('new_order') == None:
             continue
@@ -206,8 +206,6 @@ def UseMode1(data):
         print(f'produce: {need_day*X10G_oneday_max_production}')
         print("==========")
         '''
-        if delivery_date > need_date:   #超出需求日
-            Output['status'] = False
         tmpOrder = {
             value['id']: {
                 'id': value['id'],
@@ -215,9 +213,12 @@ def UseMode1(data):
                 'number': value['number'],
                 'order_date': value['order_date'],
                 'type': value['type'],
-                'delivery_date': f'{delivery_date}'
+                'delivery_date': f'{delivery_date}',
+                'status':True
             }
         }
+        if delivery_date > need_date:   #超出需求日
+            tmpOrder[value['id']]['status'] = False
         Output['pq_10G'].append(tmpOrder)   #所有10G的訂單預測交期加入pq_10G
         if data.get('new_order') == None:
             continue
@@ -270,7 +271,6 @@ def UseMode2(data):
         'new_order':{},
         'machine_num_need_1G':[],
         'machine_num_need_10G' :[],
-        'status':True
         }
     #1G預測
     tmp_buffer_1G = 0 #用來放滿足當前訂單還剩下多少
@@ -303,8 +303,6 @@ def UseMode2(data):
             delivery_date = datetime.date(year, month, day)
             year, month , day = SplitNeedDate(value['need_date'])
             need_date = datetime.date(year, month, day)
-            if delivery_date > need_date:
-                Output['status'] = False
             tmpOrder = {
                 value['id']: {
                     'id': value['id'],
@@ -312,9 +310,12 @@ def UseMode2(data):
                     'number': value['number'],
                     'order_date': value['order_date'],
                     'type': value['type'],
-                    'delivery_date': f'{delivery_date}'
+                    'delivery_date': f'{delivery_date}',
+                    'status':True
                 }
             }
+            if delivery_date > need_date:   #超出需求日
+                tmpOrder[value['id']]['status'] = False
             Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
             if data.get('new_order') == None:
                 continue
@@ -359,8 +360,6 @@ def UseMode2(data):
             delivery_date = datetime.date(year, month, day)
             year, month , day = SplitNeedDate(value['need_date'])
             need_date = datetime.date(year, month, day)
-            if delivery_date> need_date:
-                Output['status'] = False
             tmpOrder = {
                 value['id']: {
                     'id': value['id'],
@@ -368,9 +367,12 @@ def UseMode2(data):
                     'number': value['number'],
                     'order_date': value['order_date'],
                     'type': value['type'],
-                    'delivery_date': f'{delivery_date}'
+                    'delivery_date': f'{delivery_date}',
+                    'status':True
                 }
             }
+            if delivery_date > need_date:   #超出需求日
+                tmpOrder[value['id']]['status'] = False
             Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
             if data.get('new_order') == None:
                 continue
@@ -421,7 +423,6 @@ def UseMode3(data):
         'new_order':{},
         'machine_num_need_1G':[],
         'machine_num_need_10G' :[],
-        'status':True
         }
     #1G預測
     tmp_buffer_1G = 0 #用來放滿足當前訂單還剩下多少
@@ -457,8 +458,6 @@ def UseMode3(data):
             delivery_date = datetime.date(year, month, day)
             year, month , day = SplitNeedDate(value['need_date'])
             need_date = datetime.date(year, month, day)
-            if delivery_date > need_date:
-                Output['status'] = False
             tmpOrder = {
                 value['id']: {
                     'id': value['id'],
@@ -466,9 +465,12 @@ def UseMode3(data):
                     'number': value['number'],
                     'order_date': value['order_date'],
                     'type': value['type'],
-                    'delivery_date': f'{delivery_date}'
+                    'delivery_date': f'{delivery_date}',
+                    'status':True
                 }
             }
+            if delivery_date > need_date:   #超出需求日
+                tmpOrder[value['id']]['status'] = False
             Output['pq_1G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
             if data.get('new_order') == None:
                 continue
@@ -516,8 +518,6 @@ def UseMode3(data):
             delivery_date = datetime.date(year, month, day)
             year, month , day = SplitNeedDate(value['need_date'])
             need_date = datetime.date(year, month, day)
-            if delivery_date> need_date:
-                Output['status'] = False
             tmpOrder = {
                 value['id']: {
                     'id': value['id'],
@@ -525,9 +525,12 @@ def UseMode3(data):
                     'number': value['number'],
                     'order_date': value['order_date'],
                     'type': value['type'],
-                    'delivery_date': f'{delivery_date}'
+                    'delivery_date': f'{delivery_date}',
+                    'status':True
                 }
             }
+            if delivery_date > need_date:   #超出需求日
+                tmpOrder[value['id']]['status'] = False
             Output['pq_10G'].append(tmpOrder)    #所有1G的訂單預測交期加入pq_1G
             if data.get('new_order') == None:
                 continue
