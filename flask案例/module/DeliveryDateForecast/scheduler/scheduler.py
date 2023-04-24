@@ -1,10 +1,10 @@
 '''
 目的: 處理交期排程
+- API包裝
 '''
 from .DB_mysql import Mysql
 from .FileProcess import read_file
-from datetime import datetime, timedelta, date
-from ..OutputPrediction import Function as func
+from datetime import datetime, timedelta, timezone
 
 orderorder = ['id','need_date','number','order_date','type','delivery_date']
 datenumber = ['date','number']
@@ -19,8 +19,8 @@ finish_queue: list = []
 
 db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
 
-
-yesterday_date = datetime.strftime(date.today()-timedelta(days=1),'%Y-%m-%d')
+today_date_unformated = datetime.utcnow().replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+yesterday_date = datetime.strftime(today_date_unformated-timedelta(days=1),'%Y-%m-%d')
 
 # 回傳: Buffer1G
 def get_buffer1G() -> int:

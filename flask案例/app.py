@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from module.DeliveryDateForecast.scheduler import scheduler as s
 from module.DeliveryDateForecast.OutputPrediction import Function as func
-from datetime import date, timedelta, datetime, timezone
+from datetime import timedelta, datetime, timezone
 from werkzeug.utils import secure_filename
 import os, copy
 app = Flask(__name__)

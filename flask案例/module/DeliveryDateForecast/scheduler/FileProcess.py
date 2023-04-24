@@ -1,12 +1,10 @@
 '''
 目的: 負責處理CSV檔案
+- 格式轉換
 - 回傳成 list 或 json 的檔案格式
 '''
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from datetime import timedelta, datetime
-from .DB_mysql import Mysql
+from datetime import  datetime
 
 dataframe = pd.DataFrame
 

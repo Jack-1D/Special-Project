@@ -1,13 +1,7 @@
 '''
-目的: 處理排程所需的資料
-1. buffer
-- 儲存目前預算庫存
-2. pq: priority queue
-- 訂單資料
-
-程式參考: https://blog.51cto.com/icenycmh/2118718
+目的: 資料庫中處理排程所需的資料
+對資料庫的增刪查改
 '''
-# import MySQLdb
 import pymysql as MySQLdb
 import pandas as pd
 from datetime import timedelta, datetime
@@ -15,8 +9,6 @@ from datetime import timedelta, datetime
 ll = list[list]
 dataframe = pd.DataFrame
 
-
-#處理 XXX 在mysql 上
 class Mysql(object):
     def __init__(self, host: str, user: str, password: str, db: str, port: int):
         try:
