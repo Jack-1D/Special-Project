@@ -70,7 +70,6 @@ def changemode():
         return_copy = copy.deepcopy(return_value)
         predict_result = func.PredictDeliveryDate(return_copy)
         
-        
         return_value['pq_1G'] = predict_result['pq_1G']
         return_value['pq_10G'] = predict_result['pq_10G']
         return_value['machine_num_need_1G'] = predict_result['machine_num_need_1G']

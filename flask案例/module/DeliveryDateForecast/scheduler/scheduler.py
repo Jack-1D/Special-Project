@@ -2,6 +2,7 @@
 目的: 處理交期排程
 - API包裝
 '''
+import threading
 from .DB_mysql import Mysql
 from .FileProcess import read_file
 from datetime import datetime, timedelta, timezone
@@ -159,15 +160,24 @@ def add_limit(path: str=None) -> dict:
     print("machine",machine_num_1G)
     return {"machine_num_1G":machine_num_1G, "machine_num_10G":machine_num_10G}
 
+def insert_product_thread(row: dict) -> None:
+    db = Mysql("0.0.0.0","pdclab","pdclab1234","orderlist",3306)
+    for param in row.itertuples():
+        db.insert_product(param)
+    return
+
 # 每日從csv中讀取機台產量 (機台資訊塞進資料庫、增加前一天的生產量到buffer、檢查是否完成訂單、buffer寫回資料庫)
 ## 回傳: 所有已完成訂單list of list
 def get_daily_total(path: str, yesterday_date: str = yesterday_date) -> dict:
     global buffer1G, buffer10G, finish_queue
+    threads: list = []
     db.delete_all_product()
     df = read_file(path=path)
-    for row in df.itertuples():
-        print(row)
-        db.insert_product(row=row)
+    for index in range(0, len(df.index), 60):
+        threads.append(threading.Thread(target = insert_product_thread, args = (df.loc[index:index+59],)))
+        threads[index//60].start()
+    for i in range(len(threads)):
+        threads[i].join()
     for p in db.get_1G_production(yesterday_date):
         buffer1G += p[0]
         print(buffer1G)
