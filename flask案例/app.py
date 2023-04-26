@@ -75,7 +75,6 @@ def changemode():
         return_value['machine_num_need_1G'] = predict_result['machine_num_need_1G']
         return_value['machine_num_need_10G'] = predict_result['machine_num_need_10G']
         s.update_delivery(return_value)
-
         # 只回傳時間內的需求機台數
         date_range = [datetime.strptime(data['start_date'],"%Y-%m-%d") + timedelta(days=idx) for idx in range(show_date_length)]
         return_machine_need = [{datetime.strftime(datetime.strptime(data['start_date'],"%Y-%m-%d") + \
@@ -114,8 +113,9 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
-            return_value = func.PredictDeliveryDate(s.get_daily_total('machine_status.csv',yesterday_date))
-            s.update_delivery(return_value)
+            if filename == 'machine_status.csv':
+                return_value = func.PredictDeliveryDate(s.get_daily_total('machine_status.csv',yesterday_date))
+                s.update_delivery(return_value)
             return "Success"
     return "Fail"
 
