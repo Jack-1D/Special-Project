@@ -2,6 +2,8 @@ import json
 from .ProcessDataX10G import *
 from .ProcessDataX1G import *
 import datetime
+import pytz
+import time
 
 X10G_mean = getX10G_design_weight_mean()
 X10G_len = getX10G_len()
@@ -10,6 +12,7 @@ X1G_len = getX1G_len()
 X10G_buffer = 0
 X1G_buffer = 0
 mode = 1
+factor = 700 #設置future_machine_list有多長
 X10G_max_machine_num = 6
 X1G_max_machine_num = 9
 X10G_cycle = 1 #10G只有日班
@@ -18,6 +21,14 @@ X10G_oneday_max_production = X10G_mean*X10G_max_machine_num*X10G_cycle
 X1G_oneday_max_production = X1G_mean*X1G_max_machine_num*X1G_cycle
 threshold_day = 2 # mode2 mode3 距離需求日threshold
 
+#設置today
+def setToday():
+    tz = pytz.timezone('Asia/Taipei')
+    dt = datetime.datetime.fromtimestamp(time.time(), tz)
+    today = dt.date()
+    return today
+
+today = setToday()
 
 #模式選擇函數
 def ChooseMode(new_mode):
@@ -46,19 +57,24 @@ def FillNextDay_Mode2(i, future_machine_list, max_machine_num):
         FillNextDay_Mode2(i + 1, future_machine_list, max_machine_num)
 
 # Mode3 若當日機台數滿了 往後填
-def FillNextDay_Mode3(i, future_machine_list, future_machine_limit_list):
+def FillNextDay_Mode3(i, future_machine_list, future_machine_limit_list, final_index):
     if future_machine_list[i + 1] < list(future_machine_limit_list[i + 1].values())[0]['number']:
+        if i+1 > final_index:
+            final_index = i + 1
         future_machine_list[i + 1] = future_machine_list[i + 1] + 1
+        return final_index
     else:
-        FillNextDay_Mode3(i + 1, future_machine_list, future_machine_limit_list)
+        return FillNextDay_Mode3(i + 1, future_machine_list, future_machine_limit_list, final_index)
 
 #Mode3 若當日機台數滿了 往前填
-def FillBeforeDay_Mode3(i, future_machine_list, future_machine_limit_list):
+def FillBeforeDay_Mode3(i, future_machine_list, future_machine_limit_list, final_index):
     for j in range(0, i):
         if future_machine_list[j] < list(future_machine_limit_list[j].values())[0]['number']:
             future_machine_list[j] = future_machine_list[j] + 1
-            return
-    FillNextDay_Mode3(i, future_machine_list, future_machine_limit_list)    #前面也都滿了，填入下一天
+            if j > final_index:
+                final_index = j
+            return final_index
+    return FillNextDay_Mode3(i, future_machine_list, future_machine_limit_list, final_index)    #前面也都滿了，填入下一天
 
 #Mode2填補未來需要的機台數
 def FillUnit_Mode2(need_unit, future_machine_list, type, begin_index, end_index):
@@ -81,24 +97,25 @@ def FillUnit_Mode2(need_unit, future_machine_list, type, begin_index, end_index)
     return begin_index
 
 #Mode3填補未來需要的機台數，並有每日機台上線
-def FillUnit_Mode3(need_unit, future_machine_list, future_machine_limit_list, begin_index, end_index):
+def FillUnit_Mode3(need_unit, future_machine_list, future_machine_limit_list, begin_index, end_index, final_index):
     while need_unit > 0:
         for i in range(begin_index, end_index):
             if need_unit <=0:
                 begin_index = i
                 break
-            #print(f"index {begin_index} to {end_index}")
             if future_machine_list[i] < list(future_machine_limit_list[i].values())[0]['number']:
+                if i > final_index:
+                    final_index = i
                 future_machine_list[i] = future_machine_list[i] + 1
             else:
-                FillBeforeDay_Mode3(i, future_machine_list, future_machine_limit_list)  #當天填滿，往前找是否有空缺，否則填入下一天，
+                final_index = FillBeforeDay_Mode3(i, future_machine_list, future_machine_limit_list, final_index)  #當天填滿，往前找是否有空缺，否則填入下一天，
             need_unit = need_unit -1
         if(need_unit !=0):
             begin_index = 0
-    return begin_index
+    return begin_index, final_index
 
 # 計算交期
-def ComputeDeliveryDate(future_machine_list, order_need_unit_list, today):
+def ComputeDeliveryDate(future_machine_list, order_need_unit_list):
     buffer = 0
     deliverydate_list = [0]*len(order_need_unit_list)
     tmp_index = 0   #當前檢查到哪裡
@@ -122,7 +139,6 @@ def ComputeDeliveryDate(future_machine_list, order_need_unit_list, today):
 
 #mode 1
 def UseMode1(data):
-    today = datetime.date.today() #今天日期
     Output = {
         'pq_1G': [],
         'pq_10G': [],
@@ -142,19 +158,8 @@ def UseMode1(data):
         need_day = int(((need_production - tmp_buffer_1G)/(X1G_oneday_max_production)) + 1) #需要幾天生產，補齊1天 +1
         day_begin_1G = day_end_1G
         day_end_1G = day_begin_1G + need_day
-        #print(f'buffer begin: {tmp_buffer_1G}')
         tmp_buffer_1G = int((need_day*X1G_oneday_max_production + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
         delivery_date = today + datetime.timedelta(days=day_end_1G)
-        '''
-        print(f'begin: {today + datetime.timedelta(days=day_begin_1G)}')
-        print(f'end: {today + datetime.timedelta(days=day_end_1G)}')
-        print(f'delivery date: { delivery_date}')
-        print(f'buffer end: {tmp_buffer_1G}')
-        print(f'need: {need_production}')
-        print(f'need day: {need_day}')
-        print(f'produce: {need_day*X1G_oneday_max_production}')
-        print("==========")
-        '''
         tmpOrder = {
             value['id']: {
                 'id': value['id'],
@@ -193,19 +198,8 @@ def UseMode1(data):
         need_day = int(((need_production - tmp_buffer_10G)/(X10G_oneday_max_production)) + 1) #需要幾天生產，補齊1天 +1
         day_begin_10G = day_end_10G
         day_end_10G = day_begin_10G + need_day
-        #print(f'buffer begin: {tmp_buffer_10G}')
         tmp_buffer_10G = int((need_day*X10G_oneday_max_production + tmp_buffer_10G) - need_production)  #滿足訂單後還剩下多少多的
         delivery_date = today + datetime.timedelta(days=day_end_10G)
-        '''
-        print(f'begin: {today + datetime.timedelta(days=day_begin_10G)}')
-        print(f'end: {today + datetime.timedelta(days=day_end_10G)}')
-        print(f'delivery date: { delivery_date}')
-        print(f'buffer end: {tmp_buffer_10G}')
-        print(f'need: {need_production}')
-        print(f'need day: {need_day}')
-        print(f'produce: {need_day*X10G_oneday_max_production}')
-        print("==========")
-        '''
         tmpOrder = {
             value['id']: {
                 'id': value['id'],
@@ -264,7 +258,6 @@ def UseMode1(data):
 
 #mode 2
 def UseMode2(data):
-    today = datetime.date.today() #今天日期
     Output = {
         'pq_1G': [],
         'pq_10G': [],
@@ -278,7 +271,7 @@ def UseMode2(data):
         year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
         last_need_date = datetime.date(year, month, day)
         total_day = (last_need_date - today).days
-        future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        future_machine_need_list_1G = [0]*factor  
         order_need_unit_list_1G = [0]*len(data['pq_1G'])
         begin_index_1G = 0
         for order in data['pq_1G']:
@@ -289,13 +282,15 @@ def UseMode2(data):
             need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
             tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
             order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
-            end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-            #print(f'begin: {begin_index_1G}')
-            #print(f'end: {end_index_1G}')
+            if (need_date - today).days - threshold_day > 0:
+                end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            elif (need_date - today).days <= 0:
+                end_index_1G = 1
+            else:
+                end_index_1G = (need_date - today).days
             begin_index_1G = FillUnit_Mode2(need_unit, future_machine_need_list_1G, value['type'], begin_index_1G , end_index_1G)   #填滿unit，並回傳下次要從哪裡開始填
-            #print(f'buffer begin: {tmp_buffer_1G}')
         
-        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
+        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G)
         for order in data['pq_1G']:
             value = list(order.values())[0]
             order_index = data['pq_1G'].index(order)
@@ -335,7 +330,7 @@ def UseMode2(data):
         year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
         last_need_date = datetime.date(year, month, day)
         total_day = (last_need_date - today).days
-        future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        future_machine_need_list_10G = [0]*factor  #開五倍用來處理可能會超出需求日的問題
         order_need_unit_list_10G = [0]*len(data['pq_10G'])
         begin_index_10G = 0
         for order in data['pq_10G']:
@@ -346,13 +341,15 @@ def UseMode2(data):
             need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
             tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
             order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
-            end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-            #print(f'begin: {begin_index_10G}')
-            #print(f'end: {end_index_10G}')
+            if (need_date - today).days - threshold_day > 0:
+                end_index_10G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_10G的哪個index(不包含)
+            elif (need_date - today).days <= 0:
+                end_index_10G = 1
+            else:
+                end_index_10G = (need_date - today).days
             begin_index_10G = FillUnit_Mode2(need_unit, future_machine_need_list_10G, value['type'], begin_index_10G , end_index_10G)   #填滿unit，並回傳下次要從哪裡開始填
-            #print(f'buffer begin: {tmp_buffer_10G}')
-        
-        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
+
+        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G)
         for order in data['pq_10G']:
             value = list(order.values())[0]
             order_index = data['pq_10G'].index(order)
@@ -416,7 +413,8 @@ def UseMode2(data):
 
 #mode 3
 def UseMode3(data):
-    today = datetime.date.today() #今天日期
+    final_index_1G = 0
+    final_index_10G = 0
     Output = {
         'pq_1G': [],
         'pq_10G': [],
@@ -430,7 +428,7 @@ def UseMode3(data):
         year, month, day = SplitNeedDate(list(data['pq_1G'][-1].values())[0]['need_date'])
         last_need_date = datetime.date(year, month, day)
         total_day = (last_need_date - today).days
-        future_machine_need_list_1G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        future_machine_need_list_1G = [0]*factor  #開五倍用來處理可能會超出需求日的問題
         order_need_unit_list_1G = [0]*len(data['pq_1G'])
         begin_index_1G = 0
         future_machine_limit_list_1G = data['machine_num_1G']
@@ -444,13 +442,15 @@ def UseMode3(data):
             need_unit = int(((need_production - tmp_buffer_1G)/(X1G_mean*X1G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
             tmp_buffer_1G = int((need_unit*X1G_mean*X1G_cycle + tmp_buffer_1G) - need_production) #滿足訂單後還剩下多少多的
             order_need_unit_list_1G[data['pq_1G'].index(order)] = need_unit
-            end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-            #print(f'begin: {begin_index_1G}')
-            #print(f'end: {end_index_1G}')
-            begin_index_1G = FillUnit_Mode3(need_unit, future_machine_need_list_1G, future_machine_limit_list_1G, begin_index_1G , end_index_1G)
-            #print(f'buffer begin: {tmp_buffer_1G}')
-        
-        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G, today)
+            if (need_date - today).days - threshold_day > 0:
+                end_index_1G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_1G的哪個index(不包含)
+            elif (need_date - today).days <= 0:
+                end_index_1G = 1
+            else:
+                end_index_1G = (need_date - today).days
+            begin_index_1G , final_index_1G= FillUnit_Mode3(need_unit, future_machine_need_list_1G, future_machine_limit_list_1G, begin_index_1G , end_index_1G, final_index_1G)
+
+        delivery_date_list_1G = ComputeDeliveryDate(future_machine_need_list_1G, order_need_unit_list_1G)
         for order in data['pq_1G']:
             value = list(order.values())[0]
             order_index = data['pq_1G'].index(order)
@@ -490,7 +490,7 @@ def UseMode3(data):
         year, month, day = SplitNeedDate(list(data['pq_10G'][-1].values())[0]['need_date'])
         last_need_date = datetime.date(year, month, day)
         total_day = (last_need_date - today).days
-        future_machine_need_list_10G = [0]*total_day*5  #開五倍用來處理可能會超出需求日的問題
+        future_machine_need_list_10G = [0]*factor  #開五倍用來處理可能會超出需求日的問題
         order_need_unit_list_10G = [0]*len(data['pq_10G'])
         begin_index_10G = 0
         future_machine_limit_list_10G = data['machine_num_10G']
@@ -504,13 +504,14 @@ def UseMode3(data):
             need_unit = int(((need_production - tmp_buffer_10G)/(X10G_mean*X10G_cycle)) + 1) #需要幾天生產，補齊1天 + 1
             tmp_buffer_10G = int((need_unit*X10G_mean*X10G_cycle + tmp_buffer_10G) - need_production) #滿足訂單後還剩下多少多的
             order_need_unit_list_10G[data['pq_10G'].index(order)] = need_unit
-            end_index_10G = (need_date - today).days - threshold_day  #最多可以填到future_machine_need_list_1G的哪個index(不包含)
-            #print(f'begin: {begin_index_10G}')
-            #print(f'end: {end_index_10G}')
-            begin_index_10G = FillUnit_Mode3(need_unit, future_machine_need_list_10G, future_machine_limit_list_10G, begin_index_10G , end_index_10G)
-            #print(f'buffer begin: {tmp_buffer_10G}')
-        
-        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G, today)
+            if (need_date - today).days - threshold_day > 0:
+                end_index_10G = (need_date - today).days - threshold_day   #最多可以填到future_machine_need_list_10G的哪個index(不包含)
+            elif (need_date - today).days <= 0:
+                end_index_10G = 1
+            else:
+                end_index_10G = (need_date - today).days
+            begin_index_10G , final_index_10G= FillUnit_Mode3(need_unit, future_machine_need_list_10G, future_machine_limit_list_10G, begin_index_10G , end_index_10G, final_index_10G)
+        delivery_date_list_10G = ComputeDeliveryDate(future_machine_need_list_10G, order_need_unit_list_10G)
         for order in data['pq_10G']:
             value = list(order.values())[0]
             order_index = data['pq_10G'].index(order)
@@ -546,9 +547,7 @@ def UseMode3(data):
                     }
     #計算1G機台數
     if(len(data['pq_1G']) > 0):
-        for i in range(0, len(future_machine_need_list_1G)): #計算距離今天i天的機台數
-            if(future_machine_need_list_1G[i] == 0):
-                break
+        for i in range(0, final_index_1G + 1): #計算距離今天i天的機台數
             date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
             tmpNum = {
                 date: {
@@ -559,9 +558,7 @@ def UseMode3(data):
             Output['machine_num_need_1G'].append(tmpNum)
     #計算10G機台數
     if(len(data['pq_10G']) > 0):
-        for i in range(0, len(future_machine_need_list_10G)): #計算距離今天i天的機台數
-            if(future_machine_need_list_10G[i] == 0):
-                break
+        for i in range(0, final_index_10G + 1): #計算距離今天i天的機台數
             date = (today + datetime.timedelta(days=i)).strftime('%Y-%m-%d')
             tmpNum = {
                 date: {
@@ -572,8 +569,30 @@ def UseMode3(data):
             Output['machine_num_need_10G'].append(tmpNum)
     return Output
 
+#處理machine_num，把今天之前的資料移除
+def dealwith_machine_num(data):
+    end_index = 0
+    for tmp in data['machine_num_1G']:
+        value = list(tmp.values())[0]['date']
+        end_index = end_index + 1
+        if(value == str(today)):
+            break
+    del data['machine_num_1G'][0:end_index - 1]
+
+    end_index = 0
+    for tmp in data['machine_num_10G']:
+        value = list(tmp.values())[0]['date']
+        end_index = end_index + 1
+        if(value == str(today)):
+            break
+    del data['machine_num_10G'][0:end_index - 1]
+    return data
+
 #交期預測函數
 def PredictDeliveryDate(data):
+    global today
+    today = setToday()
+    data = dealwith_machine_num(data)
     if data.get('mode') != None:
         ChooseMode(data['mode'])
     global mode
