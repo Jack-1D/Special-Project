@@ -413,6 +413,7 @@ def UseMode2(data):
 
 #mode 3
 def UseMode3(data):
+    data = dealwith_machine_num(data)
     final_index_1G = 0
     final_index_10G = 0
     Output = {
@@ -592,7 +593,6 @@ def dealwith_machine_num(data):
 def PredictDeliveryDate(data):
     global today
     today = setToday()
-    data = dealwith_machine_num(data)
     if data.get('mode') != None:
         ChooseMode(data['mode'])
     global mode
