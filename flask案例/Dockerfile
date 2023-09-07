@@ -1,9 +1,9 @@
-FROM python:3.10
+FROM python:alpine3.18
 
 WORKDIR /code
 
 COPY . /code/
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip install -r requirements.txt
 
-CMD ["gunicorn", "--conf", "gunicorn_conf.py", "--bind", "0.0.0.0:8888", "app:app"]
+CMD ["python3", "app.py"]

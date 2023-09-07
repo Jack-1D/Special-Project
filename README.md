@@ -43,13 +43,27 @@ FLUSH PRIVILEGES;
 sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
-<!-- kill占用port的所有process -->
+## 執行程式
+``` bash
+cd flask案例
+flask run -p 8888 -h 0.0.0.0
+# or
+python3 app.py
+```
+
+## 若使用gunicorn
+``` bash
+# kill占用port的所有process
 kill $(lsof -t -i:8888)
-<!-- or -->
+# or
 sudo netstat -lpn |grep 8888
 kill -9 [pid]
-
-flask run -p 8888 -h 0.0.0.0
-<!-- 背景執行 -->
+# 背景執行
 sudo pip3 install gunicorn
 sudo gunicorn --pythonpath /home/pdclab/.local/lib/python3.10/site-packages -b 0.0.0.0:8888 app:app --daemon
+```
+
+## 若使用docker
+``` bash
+
+```
