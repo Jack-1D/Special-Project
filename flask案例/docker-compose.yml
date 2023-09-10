@@ -3,4 +3,20 @@ services:
     web:
         build: .
         ports:
-        - "8888:8888"
+            - "8888:8888"
+        environment:
+            - Database:Provider=mysql
+        networks:
+            - pdc-net
+    db:
+        image: mysql
+        ports:
+            - "11138:3306"
+        environment:
+            - MYSQL_HOST: 140.115.52.21
+            - MYSQL_USER: pdclab
+            - MYSQL_PASSWORD: pdclab1234
+        networks:
+            - pdc-net
+networks:
+    pdc-net:

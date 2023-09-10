@@ -43,6 +43,13 @@ FLUSH PRIVILEGES;
 sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
+## 在VSCODE上使用MySQL
+``` bash
+sudo mysql -p -u root
+ALTER USER 'pdclab'@'%' IDENTIFIED WITH mysql_native_password BY 'pdclab1234';
+\q
+```
+
 ## 執行程式
 ``` bash
 cd flask案例
